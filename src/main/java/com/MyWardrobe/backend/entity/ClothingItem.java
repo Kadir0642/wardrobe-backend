@@ -36,6 +36,9 @@ public class ClothingItem {
     private String color; // Örn: "Burgundy" ,"Black"
     private String brand; // Örn: "BERSHKA"
 
+    @Column(length=20)
+    private String season; // Örn: "Summer","Winter","Fall","All"
+
     @Column(name="purchase_price") // kıyafet satın alma fiyatı
     private Double purchasePrice;
 
