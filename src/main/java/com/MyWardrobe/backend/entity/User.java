@@ -28,7 +28,7 @@ public class User{
     private String password;
 
     @Column(length = 50) // Kullanıcı adı
-    private String username;
+    private String userName;
 
     // --- FARK YARATAN YER ---
 
