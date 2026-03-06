@@ -28,9 +28,12 @@ public class User{
     private String password;
 
     // --- FARK YARATAN YER ---
+
+    //Kullanıcının başta seçtiği tarzı
     @Column(name = "style_keywords") // AI modelin gerçek kullanıcıdan veri toplayıp öğreneceği yer
     private String stylekeywords;   // Kullanıcı zevkini anahtar kelimelerden ("Minimalist","Vintage","Spor") başlangıç verisi toplanabilecek
 
+    // Sosyal Ağ özelliği: Kullanıcı dolabını diğerlerine açtı mı?
     @Column(name= "is_public") // Kullanıcı hesaplarının kendi aralarında etkileşime girmesini sağlayan özellik
     private boolean isPublic=false;  // Default gizli olması kullanıcı gizliliği için isteğe baglı acilabilir
 
