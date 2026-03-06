@@ -27,6 +27,9 @@ public class User{
     @Column(nullable=false) // İlerleyen aşamalarda şifreleri veritabanına kaydetmeden önce "BCrypt (Salted Hash)" ile şifreleyeceğiz.
     private String password;
 
+    @Column(length = 50) // Kullanıcı adı
+    private String username;
+
     // --- FARK YARATAN YER ---
 
     //Kullanıcının başta seçtiği tarzı
