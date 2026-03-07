@@ -1,3 +1,20 @@
 spring:
   application:
-    name: backend
+    name: backend # Spring Boot uygulama adi
+
+  # Veritabani Baglanti Ayarlari
+  datasource:
+    url: ${DB_URL}  # placeholder
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver  # Çevirmen-> Java kodlarının PostgreSQL anlayacağı dile dönüştürülmesini sağlar
+
+  # Hibernate / JPA Ayarlari (Tablolari otomatik olusturacak kisim)
+  jpa:
+    hibernate:
+      ddl-auto: update # Biz Java'da Entity yazinca, gidip veritabaninda tabloyu kendi olusturur
+    show-sql: true # Arka planda calısan (SELECT, INSERT, UPDATE)  SQL sorgularini konsolda görmemizi saglar
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect # Hibernate'e sorguları oluştururken tam olarak PostgreSQL dilinde yaz.
+        format_sql: true # SQL sorguları terminalde gösterir
