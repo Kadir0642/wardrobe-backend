@@ -38,7 +38,7 @@ public class User{
 
     // Sosyal Ağ özelliği: Kullanıcı dolabını diğerlerine açtı mı?
     @Column(name= "is_public") // Kullanıcı hesaplarının kendi aralarında etkileşime girmesini sağlayan özellik
-    private boolean isPublic=false;  // Default gizli olması kullanıcı gizliliği için isteğe baglı acilabilir
+    private Boolean isPublic;  // Bu alan boş olsada Null alabilir, Default gizli olması kullanıcı gizliliği için isteğe baglı acilabilir
 
     @Column(name="created_at" ,updatable = false) // Hesap oluşturma tarihi ve sonradan güncellenemez.
     private LocalDateTime createdAt;
