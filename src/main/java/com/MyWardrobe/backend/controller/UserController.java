@@ -17,7 +17,7 @@ public class UserController {
 
     // Mobil uygulamadan gelen "Kayıt Ol" formunu (JSON verisini) karşılayan metod
     // http://localhost:8080/api/v1/users/register | ResponseEntity<User> HTTP  yanıtını ve nesne türünü temsil eder
-    @PostMapping("/register") // ENDPOINT -> Dış dünyaya açılan tuş gibi | Dışarıdan veri aldığımız için POST
+    @PostMapping("/register") // ENDPOINT -> Dış dünyaya açılan tuş gibi | Dışarıdan veri aldığımız için sunucuya veri gönderdiğimiz için POST
     public ResponseEntity<User> registerUser(@RequestBody User user){  // Gelen verileri user nesnesi içine doldurur.
 
         // Gelen veriyi (email, şifre, vs) ,işlem yapması için UserService'e yolluyoruz
