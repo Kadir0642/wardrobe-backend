@@ -15,7 +15,7 @@ public class ClothingItemController {
 
     // Kiyafet ekleme ENDPOINT'i
     // URL'den kullanıcının ID'sini yakalayacağız (Örn: /api/v1/clothes/1)
-    @PostMapping("/userId")
+    @PostMapping("/{userId}")
     public ResponseEntity<ClothingItem> addClothingItem(
             @PathVariable Long userId, // Kullanıcı ID'sini JSON'un içine koymak yerine doğrudan URL'den almak doğru bir pratik
             @RequestBody ClothingItem item){ // Gelen verileri ClothingItem nesnesine çevirir.
