@@ -27,7 +27,7 @@ public class UserService {
         // user.setPassword(passwordEncoder.encode(user.getPassword()));
 
         // 3.KURAL: Yeni kullanıcı ilk kayıt olduğunda dolabı gizli (private) başlasın
-        user.setPublic(false);
+        user.setIsPublic(false);
 
         // Her şey kurallara uygunsa, Repository (köprü) "Bunu veritabanına kaydet" emri verir
         System.out.println("Yeni kullanıcı Supabase'e kaydediliyor: "+user.getEmail());
