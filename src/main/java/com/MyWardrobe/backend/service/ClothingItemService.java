@@ -29,4 +29,10 @@ public class ClothingItemService {
         System.out.println(user.getUserName()+"adlı kullanıcının dolabına yeni bir parça ekleniyor: "+ item.getName());
         return clothingItemRepository.save(item);
     }
+
+    // Kullanıcının Tüm Dolabını Getirme İşlemi
+    public java.util.List<ClothingItem> getUserWardrobe(Long userId){
+        System.out.println(userId + " numaralı kullanıcının dolabı açılıyor...");
+        return clothingItemRepository.findByUserId(userId);
+    }
 }
