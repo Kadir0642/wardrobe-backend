@@ -17,7 +17,7 @@ public class ClothingItemController {
 
     private final ClothingItemService clothingItemService;
     private final FileUploadService fileUploadService; // Pipeline
-    private final ObjectMapper objectMapper; // JSON metnini Java Objesine çevirir
+    private final ObjectMapper objectMapper = new ObjectMapper(); // JSON metnini Java Objesine çevirir
 
     // Kiyafet ekleme ENDPOINT'i
     // Artık sadece JSON değil, MULTIPART (Dosya + Metin) paketi kabul ediyoruz.
