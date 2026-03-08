@@ -27,4 +27,11 @@ public class ClothingItemController {
         return ResponseEntity.ok(savedItem);
     }
 
+    //Dolabı Açma ENDPOINT (GET)
+    @GetMapping("/{userId}")  // http://localhost:8080/api/v1/clothes/2
+    public ResponseEntity<java.util.List<ClothingItem>> getUserWardrobe(@PathVariable Long userId){
+        java.util.List<ClothingItem> wardrobe =clothingItemService.getUserWardrobe(userId);
+        return ResponseEntity.ok(wardrobe);
+    }
+
 }
