@@ -17,7 +17,7 @@ public class CloudinaryConfig {
     //Normalde Java'da bir nesne lazım olduğunda her seferinde new Cloudinary() yazıp üretmek gerekir. Ancak @Bean dediğinde, bu nesneyi bir kez sen üretiyorsun ve Spring'in hafızasına (IoC Container) teslim ediyorsun.
     @Bean // "ImageUploadService" yazarken -> private final Cloudinary cloudinary; yazınca ve Spring bu Bean'i anında o servise bağlayacak (Dependency Injection).
     public Cloudinary cloudinary(){
-        Map<String, String> config = new HashMap<>();
+        Map<String, String> config = new HashMap<>(); // Kayıtların şifrelerin güvenli bir şekilde saklanması, veri bütünlüğünün kontrolünün yapılması veya blockchain teknolojilerindeki verilerin saklanması bağlanmak için kullanılır
         // Gizli olan environment variables şifrelerini çekip Cloudinary motoruna veriyoruz.
         config.put("cloud_name", System.getenv("CLOUDINARY_CLOUD_NAME"));
         config.put("api_key", System.getenv("CLOUDINARY_API_KEY"));
