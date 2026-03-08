@@ -26,7 +26,7 @@ public class User{
     private String email;
 
     @Column(nullable=false) // İlerleyen aşamalarda şifreleri veritabanına kaydetmeden önce "BCrypt (Salted Hash)" ile şifreleyeceğiz.
-    @JsonIgnore // Şifreyi API'den dışarı sızdırmaz
+    @JsonIgnore // Şifreyi API'den dışarı sızdırmaz | userID,password bunları paketlerken gereksiz bir yükün altına giriyordu. Paketlemediği için artık sistem daha hızlı çalışıyor
     private String password;
 
     @Column(length = 50) // Kullanıcı adı
