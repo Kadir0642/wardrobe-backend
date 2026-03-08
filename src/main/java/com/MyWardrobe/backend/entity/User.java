@@ -1,6 +1,6 @@
 package com.MyWardrobe.backend.entity; // Sınıfın projedeki konumu
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnore; // Bir alanın, getter veya setter'ın üzerine yerleştirerek, bu verilerin API yanıtlarında görünmesini veya gelen JSON'dan okunmasını engellersiniz . Genellikle şifreleri gizlemek veya çift yönlü ilişkileri yönetmek gibi güvenlik amacıyla kullanılır
 import jakarta.persistence.*;  // JPA (Karmaşık SQL yerine sınıflar ve yöntemlerle minimum kod değişikliğiyle farklı ilişkisel veritabanları arasında geçiş imkanı) Veritabani tablolarini ve sutunlarini belirleyen anotasyonlar burada
 import lombok.*; // getter/setter/constructer otomatik yazan Kod temizliği sağlar
 import java.time.LocalDateTime;
