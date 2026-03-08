@@ -1,5 +1,6 @@
 package com.MyWardrobe.backend.entity; // Sınıfın projedeki konumu
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;  // JPA (Karmaşık SQL yerine sınıflar ve yöntemlerle minimum kod değişikliğiyle farklı ilişkisel veritabanları arasında geçiş imkanı) Veritabani tablolarini ve sutunlarini belirleyen anotasyonlar burada
 import lombok.*; // getter/setter/constructer otomatik yazan Kod temizliği sağlar
 import java.time.LocalDateTime;
@@ -25,6 +26,7 @@ public class User{
     private String email;
 
     @Column(nullable=false) // İlerleyen aşamalarda şifreleri veritabanına kaydetmeden önce "BCrypt (Salted Hash)" ile şifreleyeceğiz.
+    @JsonIgnore // Şifreyi API'den dışarı sızdırmaz
     private String password;
 
     @Column(length = 50) // Kullanıcı adı
