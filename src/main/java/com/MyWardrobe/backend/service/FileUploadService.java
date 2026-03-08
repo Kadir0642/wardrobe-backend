@@ -32,7 +32,7 @@ public class FileUploadService {
 
         // --- 1.AŞAMA: PYTHON (AI) İLE KONUŞMA ---
         System.out.println("1.Fotoğraf python AI'a gönderiliyor...");
-        String pythonAiUrl= "http://localhost:8080/api/v1/ai/remove-bg";
+        String pythonAiUrl = "http://localhost:8000/api/v1/ai/remove-bg";
 
         HttpHeaders headers= new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
