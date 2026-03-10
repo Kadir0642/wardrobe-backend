@@ -1,6 +1,7 @@
 package com.MyWardrobe.backend.entity; // Sınıfın projedeki konumu
 
 import com.fasterxml.jackson.annotation.JsonIgnore; // Bir alanın, getter veya setter'ın üzerine yerleştirerek, bu verilerin API yanıtlarında görünmesini veya gelen JSON'dan okunmasını engellersiniz . Genellikle şifreleri gizlemek veya çift yönlü ilişkileri yönetmek gibi güvenlik amacıyla kullanılır
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;  // JPA (Karmaşık SQL yerine sınıflar ve yöntemlerle minimum kod değişikliğiyle farklı ilişkisel veritabanları arasında geçiş imkanı) Veritabani tablolarini ve sutunlarini belirleyen anotasyonlar burada
 import lombok.*; // getter/setter/constructer otomatik yazan Kod temizliği sağlar
 import java.time.LocalDateTime;
@@ -26,8 +27,8 @@ public class User{
     private String email;
 
     @Column(nullable=false) // İlerleyen aşamalarda şifreleri veritabanına kaydetmeden önce "BCrypt (Salted Hash)" ile şifreleyeceğiz.
-    @JsonIgnore // Şifreyi API'den dışarı sızdırmaz | userID,password bunları paketlerken gereksiz bir yükün altına giriyordu. Paketlemediği için artık sistem daha hızlı çalışıyor
-    private String password;
+    @JsonProperty(access=JsonProperty.Access.WRITE_ONLY) // Sadece yazmaya izin ver, okumayı (dışarı sızmayı) engelle!
+    private String password; // Şifreyi sadece dışarı veri gönderirken gizle, ama içeri yeni biri kayıt olurken şifresini al!
 
     @Column(length = 50) // Kullanıcı adı
     private String userName;
