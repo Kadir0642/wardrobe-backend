@@ -67,8 +67,30 @@ public class ClothingItem {
     @Column(name="created_at", updatable=false)
     private LocalDateTime createdAt;
 
-    @PrePersist
+    // Oluşturma tarihi, varsayılan değer atamaları veya doğrulama gibi işlemleri otomatikleştirerek kodun tekrarını önlemek için kullanılır
+    @PrePersist // bir varlığın veri tabanına ilk kez kaydedilmesinden (persist/save) hemen önce otomatik olarak çalıştırılan bir yaşam anlatımı (lifecycle) anotasyonu
     protected void onCreate(){
         this.createdAt=LocalDateTime.now();
+    } // Kayıt öncesi zamanı ayarlar
+
+    // ---  Cost Per Wear  ---
+    // "Bu ceketi almak mantıklı bir finansal karar mıydı?"
+    // @Transient sayesinde bu veritabanında sütun olmaz, sadece istek atıldığında havada hesaplanır!
+    @Transient // Derived Attribute | Hesaplanmış Özellik
+    public Double getCostPerWear(){ // Veritabanını şişirmiyor, sadece mobil uygulama bu veriyi istediği an, o saniye mevcut fiyat ve giyilme sayısına bakarak sonucu havada üretiyoruz.
+
+        // Eğer kıyafetin fiyatı girilmemişse veya bedavaysa maliyet 0'dır.
+        if(this.purchasePrice==null || this.purchasePrice<=0.0){
+            return 0.0;
+        }
+
+        // Eğer kıyafet henüz hiç giyilmemişse, maliyet kıyafetin tam fiyatıdır.
+        if(this.wearCount==null || this.wearCount==0){
+            return this.purchasePrice;
+        }
+
+        //Fiyatı giyilme sayısına böl (Virgül sonrasıyla uğraşmamak için şimdilik net bölelim)
+        return this.purchasePrice/this.wearCount;
     }
+
 }
