@@ -52,4 +52,10 @@ public class ClothingItemService {
         // 3. Değişiklikleri veritabanına kaydet.
         return clothingItemRepository.save(item);
     }
+
+    // Akıllı filtreleme |  Şuan veriyi Controller'dan alığ Repository'ye iletiyor (Pass-through)
+    public java.util.List<ClothingItem> filterClothes(Long userId,String category,String season,String color){
+        System.out.println("Filtreleme çalışıyor ... Kategori: "+ category +" | Sezon: "+season+" | Renk: "+color);
+        return clothingItemRepository.filterUserWardrobe(userId,category,season,color);
+    }
 }

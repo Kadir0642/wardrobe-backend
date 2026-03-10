@@ -67,4 +67,22 @@ public class ClothingItemController {
         ClothingItem updatedItem = clothingItemService.wearClothingItem(itemId);
         return ResponseEntity.ok(updatedItem);
     }
+
+    // Akıllı Fİltrelem ENDPOINT
+    // URL: /api/v1/clothes/{userId}/filter?category=Üst Giyim&season=Yaz
+    // Mobil Uygulamanın Kullanım Senaryoları:
+    //Sadece kışlıkları getir: GET /api/v1/clothes/1/filter?season=Kış
+    //Siyah ve Üst Giyim getir: GET /api/v1/clothes/1/filter?category=Üst Giyim&color=Siyah
+    //Hiçbir filtre yok, hepsini getir: GET /api/v1/clothes/1/filter
+    @GetMapping("/{userId}/filter")
+    public ResponseEntity<java.util.List<ClothingItem>> filterWardrobe( // Normalde Spring, URL'de beklediği bir parametreyi bulamazsa "400 Bad Request" (Hatalı İstek) fırlatır. required = false diyerek "Eğer kullanıcı bu filtreyi yollamazsa hata verme, değişkenin içine null koy geç" diyoruz. Bu da Repository'deki o IS NULL sorguyla  uyum içinde çalışır.
+            @PathVariable Long userId,// @PathVariable -> Kullanıcının kimliği (userId) mecburi olduğu için onu adrese gömdük
+            @RequestParam(required = false) String category, // @RequestParam(required =false) Kullanıcı bu filtreyi seçmek zorunda değil | Query Parameter(Sorgu Parametresi)
+            @RequestParam(required = false) String season,
+            @RequestParam(required = false) String color
+    ){
+        java.util.List<ClothingItem> filteredWardrobe = clothingItemService.filterClothes(userId,category,season,color);
+        return ResponseEntity.ok(filteredWardrobe);
+    }
+
 }
