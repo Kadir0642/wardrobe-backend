@@ -35,4 +35,21 @@ public class ClothingItemService {
         System.out.println(userId + " numaralı kullanıcının dolabı açılıyor...");
         return clothingItemRepository.findByUserId(userId);
     }
+
+    //Kıyafeti Giyildi Olarak İşaretle ve İstatisikleri Güncelle
+    public ClothingItem wearClothingItem(Long itemId){
+
+        // 1.Kıyafeti bul
+        ClothingItem item = clothingItemRepository.findById(itemId)
+                .orElseThrow(()-> new RuntimeException("Hata: Kıyafet bulunamadı!"));
+
+        // 2.Giyilme sayısını (wearCount) arttırır. Eğer null ise önce 0 yap, sonra 1 arttırır.
+        int currentWearCount = (item.getWearCount()== null) ? 0: item.getWearCount(); // Veritabanında eski bir kayıt varsa ve bu alan null kalmışsa, null+1 (NullPointerException hatası verip çökmesin diye)
+        item.setWearCount(currentWearCount+1);
+
+        System.out.println(item.getName()+" bir kez daha giyildi! Toplam giyilme: "+item.getWearCount());
+
+        // 3. Değişiklikleri veritabanına kaydet.
+        return clothingItemRepository.save(item);
+    }
 }
