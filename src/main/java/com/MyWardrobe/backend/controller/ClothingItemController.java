@@ -56,10 +56,10 @@ public class ClothingItemController {
         return ResponseEntity.ok(wardrobe); //İşlem başarılıysa "200 OK" ile kaydedilen kıyafeti geri dönüyoruz
     }
 
-    //  Veritabanında yepyeni bir kayıt oluştururken POST
-    //  Veriyi okurken GET kullanmıştık.
-    //  Var olan bir kaydın üzerindeki bir veriyi (burada giyilme sayısını) güncellediğimiz için PUT
-    //  Veya spesifik alan güncellemeleri için PATCH kullanmak
+    //  Veritabanında yepyeni bir kayıt oluştururken  "Create -> POST"
+    //  Veriyi okurken "Read -> GET" kullanmıştık.
+    //  Var olan bir kaydın üzerindeki bir veriyi (burada giyilme sayısını) güncellediğimiz için " Update -> PUT (TKaydı komple ezip yenile	-> Kıyafetin tüm detaylarını (renk, marka, isim) düzenle)"
+    //  Spesifik alan güncellemeleri  için "Update -> PATCH (Kısmi güncellemeler (Yama), Sadece belli bir alanı yama yap -> Sadece giyilme sayısını (+1) artır)"
 
     // Kıyafeti Giyme Endpoint'i (Kullanıcı kıyafeti giydikçe bu adrese istek atacak)
     @PutMapping("/{itemId}/wear") // Mevcut veriyi güncellerken kullanırız.
