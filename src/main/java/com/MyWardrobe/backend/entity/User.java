@@ -26,6 +26,9 @@ public class User{
     @Column(nullable=false, unique=true) // Email alanı boş bırakılamaz (nullable)  veritabanında aynı email'den sadece bir tane olabilir (unique)
     private String email;
 
+
+    // --- GÜVENLİK GÜNCELLEMELERİ İLERİ AŞAMALARDA GEREKLİ ---
+
     @Column(nullable=false) // İlerleyen aşamalarda şifreleri veritabanına kaydetmeden önce "BCrypt (Salted Hash)" ile şifreleyeceğiz.
     @JsonProperty(access=JsonProperty.Access.WRITE_ONLY) // Sadece yazmaya izin ver, okumayı (dışarı sızmayı) engelle!
     private String password; // Şifreyi sadece dışarı veri gönderirken gizle, ama içeri yeni biri kayıt olurken şifresini al!
