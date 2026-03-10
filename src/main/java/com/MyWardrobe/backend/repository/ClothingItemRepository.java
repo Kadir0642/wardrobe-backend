@@ -20,7 +20,7 @@ public interface ClothingItemRepository extends JpaRepository<ClothingItem, Long
     // Esnek Filtreleme Motoru
     // Eğer parametre boş (NULL) gelirse o şartı atlar,dolu gelirse eşleştirir.
     // JPQL (Java Persistence Query Language)
-    @Query("SELECT c FROM ClothingItem c WHERE c.userId = :userId " +
+    @Query("SELECT c FROM ClothingItem c WHERE c.user.id = :userId " +
             "AND (:category IS NULL OR c.category = :category) " +
             "AND (:season IS NULL OR c.season = :season) " +
             "AND (:color IS NULL OR c.color = :color)") //rengi ne olursa olsun diğer şartlara uyan tüm kıyafetleri getirir. | boş değilse istenen renkli olanları getirir.
