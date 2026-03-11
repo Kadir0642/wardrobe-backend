@@ -27,7 +27,7 @@ public class Outfit {
 
     // 2.İLİŞKİ: Bu kombinin içinde hangi kıyafetler var? (En önemli yer)
     @ManyToMany  //  Çoka Çok (N:M)" ilişkisi için araya üçüncü bir "Köprü Tablo" (Junction Table)
-    @JoinTable( // Spring Boot ayağa kalkarken outfit_clothing_items adında üçüncü, görünmez bir tablo oluşacak.
+    @JoinTable( // Spring Boot ayağa kalkarken outfit_clothing_items adında üçüncü, bir tablo oluşacak.
             //Bu tablo sadece-> 3 numaralı kombin, 5 ve 8 numaralı kıyafetlerden oluşur." Bu sayede siyah tişörtünü istediğin kadar farklı kombine ekleyebileceksin!
             name="outfit_clothing_items", // Spring Boot bu isimde gizli bir köprü tablosu kuracak
             joinColumns = @JoinColumn(name= "outfit_id"),
