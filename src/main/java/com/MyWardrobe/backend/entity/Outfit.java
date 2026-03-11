@@ -17,7 +17,7 @@ public class Outfit {
     private Long id;
 
     @Column(nullable=false)
-    private String name; // "Kişlık Ofis Kombini", "Spor Salonu"
+    private String name; // Her kombinin mutlaka bir ismi olacak | "Kişlık Ofis Kombini", "Spor Salonu"
 
 
     // 1.İLİŞKİ: Bu kombin kime ait?
