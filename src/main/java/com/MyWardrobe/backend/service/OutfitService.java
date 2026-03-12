@@ -54,4 +54,25 @@ public class OutfitService {
     public List<Outfit> getUserOutfits(Long userId){
         return outfitRepository.findByUserId(userId);
     }
-}
+
+    // 4. Kombini Giy (İçindeki tüm kıyafetlerin istatistiklerini otomatik güncelle!)
+    public Outfit wearOutfit(Long outfitId) {
+        Outfit outfit = outfitRepository.findById(outfitId) // kombin kontrolü
+                .orElseThrow(() -> new RuntimeException("Hata: Kombin bulunamadı!"));
+
+        System.out.println(outfit.getName() + " kombini giyiliyor. İstatistikler güncelleniyor...");
+
+        // Kombinin içindeki HER BİR kıyafeti tek tek gez
+        for (ClothingItem item : outfit.getClothingItems()) {
+            int currentWearCount = (item.getWearCount() == null) ? 0 : item.getWearCount();
+            item.setWearCount(currentWearCount + 1); // Giyilme sayısını 1 artır
+
+            // Güncel istatistikleriyle kıyafeti kaydet
+            clothingItemRepository.save(item);
+        }
+
+        return outfit; // Güncellenmiş kombini geri döndür
+    }
+
+    }
+

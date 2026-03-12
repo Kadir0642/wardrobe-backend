@@ -36,4 +36,10 @@ public class OutfitController {
     public ResponseEntity<List<Outfit>> getUserOutfits(@PathVariable Long userId){
         return ResponseEntity.ok(outfitService.getUserOutfits(userId));
     }
+
+    // Kombini Giyme Butonu (Tek tuşla tüm kıyafetlerin maliyetini düşürür)
+    @PutMapping("/{outfitId}/wear") // Put -> Yeni kombin oluşturmuyoruz olana kısmi değişiklik yapıyoruz
+    public ResponseEntity<Outfit> wearOutfit(@PathVariable Long outfitId) {
+        return ResponseEntity.ok(outfitService.wearOutfit(outfitId));
+    }
 }
