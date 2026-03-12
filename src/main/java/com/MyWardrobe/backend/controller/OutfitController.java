@@ -39,7 +39,7 @@ public class OutfitController {
 
     // Kombini Giyme Butonu (Tek tuşla tüm kıyafetlerin maliyetini düşürür)
     @PutMapping("/{outfitId}/wear") // Put -> Yeni kombin oluşturmuyoruz olana kısmi değişiklik yapıyoruz
-    public ResponseEntity<Outfit> wearOutfit(@PathVariable Long outfitId) {
+    public ResponseEntity<Outfit> wearOutfit(@PathVariable Long outfitId) { // Parametre Bağlama: @PathVariable("id") Long id URL değerini değişkene bağlamak için kullanılır
         return ResponseEntity.ok(outfitService.wearOutfit(outfitId));
     }
 }
