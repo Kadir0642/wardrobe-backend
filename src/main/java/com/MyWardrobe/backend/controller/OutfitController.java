@@ -2,6 +2,7 @@ package com.MyWardrobe.backend.controller;
 
 import com.MyWardrobe.backend.entity.Outfit;
 import com.MyWardrobe.backend.service.OutfitService;
+import com.MyWardrobe.backend.dto.OutfitDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,9 +32,9 @@ public class OutfitController {
         return ResponseEntity.ok(outfitService.addItemToOutfit(outfitId,itemId));
     }
 
-    // Tüm kombinleri ve içindekileri dünyaya JSON olarak sununan ENDPOINT
+    // Tüm kombinleri ve içindekileri dışarıya JSON olarak sununan ENDPOINT
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Outfit>> getUserOutfits(@PathVariable Long userId){
+    public ResponseEntity<List<OutfitDto>> getUserOutfits(@PathVariable Long userId){
         return ResponseEntity.ok(outfitService.getUserOutfits(userId));
     }
 

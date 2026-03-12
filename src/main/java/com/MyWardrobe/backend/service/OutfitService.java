@@ -6,6 +6,9 @@ import com.MyWardrobe.backend.entity.User;
 import com.MyWardrobe.backend.repository.ClothingItemRepository;
 import com.MyWardrobe.backend.repository.OutfitRepository;
 import com.MyWardrobe.backend.repository.UserRepository;
+import com.MyWardrobe.backend.dto.ClothingItemDto;
+import com.MyWardrobe.backend.dto.OutfitDto;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -50,9 +53,14 @@ public class OutfitService {
         return outfitRepository.save(outfit);
     }
 
-    // 3.Kullanıcının Tüm kombinlerini listele
-    public List<Outfit> getUserOutfits(Long userId){
-        return outfitRepository.findByUserId(userId);
+    // 3. Kullanıcının Tüm Kombinlerini Listele (ARTIK DTO DÖNÜYOR!)
+    // Servis katmanı artık sadece veri çekmiyor, aynı zamanda veriyi "sunuma hazırlama" görevini de üstleniyor.
+    // Repository'den çıkan ağır Outfit nesneleri, kapıdan (Controller) dışarı çıkmadan hemen önce convertToDto filtresinden geçerek OutfitDto'ya dönüşüyor.
+    public List<OutfitDto> getUserOutfits(Long userId) { //
+        return outfitRepository.findByUserId(userId)
+                .stream()
+                .map(this::convertToDto) // Veritabanından geleni kargo kutusuna koy
+                .collect(Collectors.toList());
     }
 
     // 4. Kombini Giy (İçindeki tüm kıyafetlerin istatistiklerini otomatik güncelle!)
@@ -74,5 +82,26 @@ public class OutfitService {
         return outfit; // Güncellenmiş kombini geri döndür
     }
 
+    // --- MİMARİ DÖNÜŞTÜRÜCÜ (MAPPER) ---
+    private OutfitDto convertToDto(Outfit outfit) {
+        // 1. Kombinin içindeki ağır kıyafetleri, hafif DTO'lara çevir (Gereksiz veri yükünden kurtarır)
+        // Kombinin içindeki her bir ağır ClothingItem nesnesini bandın (stream) üzerine koyar, map işlemiyle onları hafif ClothingItemDto kutularına dönüştürür ve en son collect ile yepyeni, temiz bir liste oluşturur.
+        List<ClothingItemDto> itemDtos = outfit.getClothingItems().stream()
+                .map(item -> ClothingItemDto.builder()
+                        .id(item.getId())
+                        .name(item.getName())
+                        .imageUrl(item.getImageUrl())
+                        .category(item.getCategory())
+                        .costPerWear(item.getCostPerWear())
+                        .build())
+                .collect(Collectors.toList());
+
+        // 2. Hafif kıyafetleri, hafif kombin kutusuna koy ve gönder
+        return OutfitDto.builder()
+                .id(outfit.getId())
+                .name(outfit.getName())
+                .clothes(itemDtos)
+                .build();
     }
+}
 
