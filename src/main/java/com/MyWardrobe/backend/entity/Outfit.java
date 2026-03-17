@@ -35,6 +35,7 @@ public class Outfit {
     )
     private List<ClothingItem> clothingItems;
 
+    @Column(name= "created_at", updatable=false)
     private LocalDateTime createdAt; // Kıyafetin ne zaman oluşturulduğunu bize söyler
 
     @PrePersist

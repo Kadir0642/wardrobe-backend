@@ -64,6 +64,19 @@ public class ClothingItem {
     @Column(name="quality_rating") // 1-4 Yıldız: Kapsül dolap analizleri için
     private Integer qualityRating;
 
+    // --- GÖRÜNÜRLÜK (VISIBILITY) BAYRAKLARI (Mobildeki 4 Buton İçin) ---
+    @Column(name="is_private")
+    private Boolean isPrivate = false; // Sosyal (Keşfet) akışında başkaları görebilir mi ?
+
+    @Column(name="is_favorite")
+    private Boolean isFavorite= false; // Kullanıcını favorilerinde mi ?
+
+    @Column(name="do_not_style")
+    private Boolean doNotStyle = false; // AI bu parçayı kombinlerken KULLANMASIN (Örn: Sadece evde giyilen tişört)
+
+    @Column(name="is_archived")
+    private Boolean isArchived= false; // Yazlık/Kışlık dolaba kaldırılmış, vitrinde görünmeyecek eşyalar
+
     @Column(name="created_at", updatable=false)
     private LocalDateTime createdAt;
 
