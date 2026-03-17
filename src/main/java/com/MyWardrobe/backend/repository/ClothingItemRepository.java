@@ -31,4 +31,7 @@ public interface ClothingItemRepository extends JpaRepository<ClothingItem, Long
             @Param("color") String color
     );
 
+    // --- ÇAPA (ANCHOR) MODELİ İÇİN KATEGORİ BAZLI ARAMA --- [Arama motoruna yeni filtre ayarı]
+    // Kullanıcının dolabından belirli bir kategoriye (Örn: "Alt Giyim") ait tüm parçaları getirir.
+    List<ClothingItem> findByUserIdAndCategory(Long userId, String category);
 }
