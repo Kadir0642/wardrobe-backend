@@ -53,9 +53,61 @@ public class ClothingItemService {
         return clothingItemRepository.save(item);
     }
 
-    // Akıllı filtreleme |  Şuan veriyi Controller'dan alığ Repository'ye iletiyor (Pass-through)
+    // Akıllı filtreleme |  Şuan veriyi Controller'dan alıp Repository'ye iletiyor (Pass-through)
     public java.util.List<ClothingItem> filterClothes(Long userId,String category,String season,String color){
         System.out.println("Filtreleme çalışıyor ... Kategori: "+ category +" | Sezon: "+season+" | Renk: "+color);
         return clothingItemRepository.filterUserWardrobe(userId,category,season,color);
     }
+
+    // --- ANCHOR ALGORİTHM ---
+    public java.util.List<ClothingItem> generateOutfitFromAnchor(Long anchorItemId){
+
+        // 1. Çapa (Merkez) kıyafeti kontrolü (var/yok)
+        ClothingItem anchorItem = clothingItemRepository.findById(anchorItemId)
+                .orElseThrow(()-> new RuntimeException("HATA: Çapa kıyafet bulunamadı!"));
+
+        Long userId= anchorItem.getUser().getId();
+        String anchorCategory = anchorItem.getCategory(); // Örn: "Dış Giyim"
+
+        // Kombini oluşturacağımız boş liste
+        java.util.List<ClothingItem> generatedOutfit = new java.util.ArrayList<>();
+
+        // Çapayı baş köşeye oturturuz (İlk onu ekleriz çünkü onun ETRAFINDA OLUŞACAK KOMBİN)
+        generatedOutfit.add(anchorItem);
+
+        // 2. Kural Motoru: Çapanın kategorisine göre eksikleri belirle ve tamamla
+        // TEMEL KOMBİN PARÇALARI -> [ DIŞ - ÜST - ALT - AYAKKABI ]
+        // İLERİDE: Buradaki rastgele seçim yerine, Python AI servisine istek atacağız!
+        if("Üst Giyim".equalsIgnoreCase(anchorCategory)){
+            addRandomItemToOutfit(userId,"Alt Giyim", generatedOutfit);
+            addRandomItemToOutfit(userId,"Ayakkabı",generatedOutfit);
+        }
+        else if ("Alt Giyim".equalsIgnoreCase(anchorCategory)) {
+            addRandomItemToOutfit(userId, "Üst Giyim", generatedOutfit);
+            addRandomItemToOutfit(userId, "Ayakkabı", generatedOutfit);
+        }
+        else if ("Dış Giyim".equalsIgnoreCase(anchorCategory)) {
+            addRandomItemToOutfit(userId, "Üst Giyim", generatedOutfit);
+            addRandomItemToOutfit(userId, "Alt Giyim", generatedOutfit);
+            addRandomItemToOutfit(userId, "Ayakkabı", generatedOutfit);
+        }
+        else if ("Ayakkabı".equalsIgnoreCase(anchorCategory)) {
+            addRandomItemToOutfit(userId, "Üst Giyim", generatedOutfit);
+            addRandomItemToOutfit(userId, "Alt Giyim", generatedOutfit);
+        }
+        System.out.println("✨ AI Kombin Çalıştı! Çapa: " + anchorItem.getName() + " etrafında kombin üretildi.");
+        return generatedOutfit;
+    }
+
+    // Kombine eksik parçayı ekleyen yardımcı (Private) metod
+    private void addRandomItemToOutfit(Long userId, String targetCategory, java.util.List<ClothingItem> outfit) {
+        java.util.List<ClothingItem> availableItems = clothingItemRepository.findByUserIdAndCategory(userId, targetCategory);
+
+        if (!availableItems.isEmpty()) {
+            // Dolapta o kategoriden eşya varsa, şimdilik rastgele birini seç
+            int randomIndex = new java.util.Random().nextInt(availableItems.size());
+            outfit.add(availableItems.get(randomIndex));
+        }
+    }
+
 }
