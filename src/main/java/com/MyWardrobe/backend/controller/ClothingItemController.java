@@ -68,7 +68,7 @@ public class ClothingItemController {
         return ResponseEntity.ok(updatedItem);
     }
 
-    // Akıllı Fİltrelem ENDPOINT
+    // Akıllı Filtreleme ENDPOINT
     // URL: /api/v1/clothes/{userId}/filter?category=Üst Giyim&season=Yaz
     // Mobil Uygulamanın Kullanım Senaryoları:
     //Sadece kışlıkları getir: GET /api/v1/clothes/1/filter?season=Kış
@@ -85,4 +85,14 @@ public class ClothingItemController {
         return ResponseEntity.ok(filteredWardrobe);
     }
 
+    // --- ANCHOR ALGROİTHM ENDPOINT ---
+    // URL: GET /api/v1/clothes/{itemId}/generate-outfit
+    // Kullanıcı bir kıyafete tıklayıp "Bununla kombin üret" dediğinde burası çalışır.
+    @GetMapping("/{itemId}/generate-outfit")
+    public ResponseEntity<java.util.List<ClothingItem>> generateOutfitWithAnchor(@PathVariable Long itemId) {
+
+        java.util.List<ClothingItem> generatedOutfit = clothingItemService.generateOutfitFromAnchor(itemId);
+
+        return ResponseEntity.ok(generatedOutfit);
+    }
 }
