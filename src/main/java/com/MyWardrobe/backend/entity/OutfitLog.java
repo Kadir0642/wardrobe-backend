@@ -30,7 +30,7 @@ public class OutfitLog {
 
     // --- AI EĞİTİM VERİLERİ (Dataset) ---
     @Column(name = "weather_conditon")
-    private String weatherConditon; // Örn: "Güneşli", "Yağmurlu" (Mobilden hava durumunu çekip buraya yazacağız)
+    private String weatherCondition; // Örn: "Güneşli", "Yağmurlu" (Mobilden hava durumunu çekip buraya yazacağız)
 
     @Column(name = "temperature")
     private Integer temperature; // Örn: 18 (Derece)

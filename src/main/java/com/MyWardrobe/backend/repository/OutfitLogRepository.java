@@ -9,5 +9,5 @@ import java.util.List;
 public interface OutfitLogRepository extends JpaRepository<OutfitLog,Long> {
 
     // Kullanıcının giyme geçmişini (Takvimini) "En Yeniden -> En Eskiye" doğru sıralayarak getirir.
-    List<OutfitLog> findByUserIdOrderByWornDateDesc(Long userId);
+    List<OutfitLog> findByUserIdOrderByWornDateDesc(Long userId); // OrderByWornDateDesc: Getirilen sonuçları wornDate (Giyilme Tarihi) sütununa göre, en yeniden en eskiye doğru (Descending - Azalan) sırala demektir.
 }
