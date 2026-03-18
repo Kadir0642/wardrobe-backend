@@ -1,5 +1,6 @@
 package com.MyWardrobe.backend.controller;
 
+import lombok.Data;
 import com.MyWardrobe.backend.entity.Outfit;
 import com.MyWardrobe.backend.entity.OutfitLog;
 import com.MyWardrobe.backend.service.OutfitService;
@@ -18,25 +19,27 @@ public class OutfitController {
     private final OutfitService outfitService;
 
     // DTO (Veri Taşıma Objesi) - Mobilden sadece ID listesi ve isim gelecek
+    @Data
     public static class OutfitRequest{
-        public String name;
-        public List<Long> clothingItemIds;
+        private String name;
+        private List<Long> clothingItemIds;
     }
 
+    @Data
     public static class LogRequest{
-        public String weather;
-        public List<Long> temperature;
+        private String weather;
+        private Integer temperature;
     }
 
     // Kombin Kaydetme Endpoint'i
     @PostMapping("/{userId}/save")   // ResponseEntity: Sadece veriyi değil, HTTP durum kodunu da (örneğin "200 OK" veya "201 Created") kontrol etmeni sağlar.
     public ResponseEntity<Outfit> saveOutfit(@PathVariable Long userId, @RequestBody OutfitRequest request){
 
-        Outfit savedOutfit = outfitService.saveOutfit(userId, request.name, request.clothingItemIds);
+        Outfit savedOutfit = outfitService.saveOutfit(userId, request.getName(), request.getClothingItemIds());
         return ResponseEntity.ok(savedOutfit);
     }
 
-    // Kombini Giyme (LOG) Endpoint'i  | // Parametre Bağlama: @PathVariable("id") Long id URL değerini değişkene bağlamak için kullanılır
+    // Kombini Giyme (LOG) Endpoint'i  |  Parametre Bağlama: @PathVariable("id") Long id URL değerini değişkene bağlamak için kullanılır
     //@PathVariable Long userId -> URL'deki {userId} kısmını yakalar.
     //Ör: adresteki .../123/save kısmındaki 123 sayısını alır ve userId değişkenine koyar. Böylece "Hangi kullanıcı için kayıt yapıyorum?" sorusunun cevabını buradan alır.
     //@RequestBody OutfitRequest request -> İsteğin gövdesindeki (body) veriyi alır.
@@ -47,8 +50,8 @@ public class OutfitController {
             @PathVariable Long outfitId,
             @RequestBody(required = false) LogRequest request){
 
-        String weather = (request != null) ? request.weather : null;
-        Integer temp = (request != null) ? request.temperature.size() : null;
+        String weather = (request != null) ? request.getWeather() : "Bilinmiyor";
+        Integer temp = (request != null) ? request.getTemperature() : null;
 
         OutfitLog log = outfitService.logOutfit(userId, outfitId, weather, temp);
         return ResponseEntity.ok(log);
