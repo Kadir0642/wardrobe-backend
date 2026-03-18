@@ -2,16 +2,21 @@ package com.MyWardrobe.backend.service;
 
 import com.MyWardrobe.backend.entity.ClothingItem;
 import com.MyWardrobe.backend.entity.Outfit;
+import com.MyWardrobe.backend.entity.OutfitLog;
 import com.MyWardrobe.backend.entity.User;
 import com.MyWardrobe.backend.repository.ClothingItemRepository;
+import com.MyWardrobe.backend.repository.OutfitLogRepository;
 import com.MyWardrobe.backend.repository.OutfitRepository;
 import com.MyWardrobe.backend.repository.UserRepository;
 import com.MyWardrobe.backend.dto.ClothingItemDto;
 import com.MyWardrobe.backend.dto.OutfitDto;
+
+import java.time.LocalDate;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,8 +26,9 @@ public class OutfitService {
 
     // Bir kombin oluşturmak için kullanıcıyı doğrulamak, kombine parça eklemek için ise o kıyafeti doğrulamalıyız
     private final OutfitRepository outfitRepository; // Dependency Injection X 3 kez
+    private final OutfitLogRepository outfitLogRepository;
     private final UserRepository userRepository;
-    private final ClothingItemRepository clothingItemRepository;
+    private final ClothingItemRepository clothingItemRepository; // Parçaların giyilme sayısını artırmak için lazım
 
     // 1. Yeni ve Boş Bir Kombin Oluştur.
     public Outfit createOutfit(Long userId, String outfitName){
@@ -63,25 +69,6 @@ public class OutfitService {
                 .collect(Collectors.toList());
     }
 
-    // 4. Kombini Giy (İçindeki tüm kıyafetlerin istatistiklerini otomatik güncelle!)
-    public Outfit wearOutfit(Long outfitId) {
-        Outfit outfit = outfitRepository.findById(outfitId) // kombin kontrolü
-                .orElseThrow(() -> new RuntimeException("Hata: Kombin bulunamadı!"));
-
-        System.out.println(outfit.getName() + " kombini giyiliyor. İstatistikler güncelleniyor...");
-
-        // Kombinin içindeki HER BİR kıyafeti tek tek gez
-        for (ClothingItem item : outfit.getClothingItems()) {
-            int currentWearCount = (item.getWearCount() == null) ? 0 : item.getWearCount();
-            item.setWearCount(currentWearCount + 1); // Giyilme sayısını 1 artır
-
-            // Güncel istatistikleriyle kıyafeti kaydet
-            clothingItemRepository.save(item);
-        }
-
-        return outfit; // Güncellenmiş kombini geri döndür
-    }
-
     // --- MİMARİ DÖNÜŞTÜRÜCÜ (MAPPER) ---
     private OutfitDto convertToDto(Outfit outfit) {
         // 1. Kombinin içindeki ağır kıyafetleri, hafif DTO'lara çevir (Gereksiz veri yükünden kurtarır)
@@ -102,6 +89,54 @@ public class OutfitService {
                 .name(outfit.getName())
                 .clothes(itemDtos)
                 .build();
+    }
+
+    // 4. KOMBİNİ DOLABA KAYDET (Save Outfit)
+    // Yapay zekanın ürettiği kombini kullanıcı beğenirse bu metot çalışır.
+    public Outfit saveOutfit(Long userId, String outfitName,List<Long> clothingItemIds){
+        User user = userRepository.findById(userId)
+                .orElseThrow(()-> new RuntimeException("Kullanıcı bulunamadı! "));
+
+        // ID'leri verilen tüm kıyafetleri veritabanından bul ve bir liste yap
+        List<ClothingItem> items =  clothingItemRepository.findAllById(clothingItemIds);
+
+        Outfit newOutfit = Outfit.builder()
+                .user(user)
+                .name(outfitName)
+                .clothingItems(items)
+                .build();
+
+        System.out.println("Yeni Kombin Kaydedildi: "+ outfitName);
+        return outfitRepository.save(newOutfit);
+    }
+
+    // 5. KOMBİNİ GİYİLDİ OLARAK İŞARETLE (Log Outfit)
+    public OutfitLog logOutfit(Long userId, Long outfitId, String weather, Integer temperature){
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(()->new RuntimeException("Kullanıcı bulunamadı! "));
+
+        Outfit outfit = outfitRepository.findById(outfitId)
+                .orElseThrow(()->new RuntimeException("Kombin bulunamadı! "));
+
+        //DOMİNO ETKİSİ: Kombinin içindeki HER BİR kıyafetin wearCount (Giyilme) sayısını 1 artır!
+        for(ClothingItem item : outfit.getClothingItems()) {
+            int currentWears = (item.getWearCount() == null) ? 0 : item.getWearCount();
+            item.setWearCount(currentWears + 1);
+            clothingItemRepository.save(item); // Veritabanını güncelle
+        }
+
+        // Takvim kaydını (Log) oluşturur
+        OutfitLog log = OutfitLog.builder()
+                .user(user)
+                .outfit(outfit)
+                .wornDate(LocalDate.now()) // Bugünü atar
+                .weatherCondition(weather)
+                .temperature(temperature)
+                .build();
+
+        System.out.println("Kombin Giyme Kaydı Oluşturuldu! Giydiği Kombin: "+ outfit.getName());
+        return outfitLogRepository.save(log);
     }
 }
 
