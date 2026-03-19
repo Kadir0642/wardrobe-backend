@@ -34,4 +34,8 @@ public interface ClothingItemRepository extends JpaRepository<ClothingItem, Long
     // --- ÇAPA (ANCHOR) MODELİ İÇİN KATEGORİ BAZLI ARAMA --- [Arama motoruna yeni filtre ayarı]
     // Kullanıcının dolabından belirli bir kategoriye (Örn: "Alt Giyim") ait tüm parçaları getirir.
     List<ClothingItem> findByUserIdAndCategory(Long userId, String category);
+
+    // --- ANALİZ MOTORU İÇİN ---
+    // Kullanıcının en çok giydiği (wearCount) kıyafeti bulur ve en yüksekten en düşüğe sıralayıp ilkini (Top 1) getirir.
+    ClothingItem findFirstByUserIdOrderByWearCountDesc(Long userId);
 }
