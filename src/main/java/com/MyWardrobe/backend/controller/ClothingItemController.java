@@ -1,5 +1,6 @@
 package com.MyWardrobe.backend.controller;
 
+import com.MyWardrobe.backend.dto.WardrobeStatsDto;
 import com.MyWardrobe.backend.entity.ClothingItem;
 import com.MyWardrobe.backend.service.ClothingItemService;
 import com.MyWardrobe.backend.service.FileUploadService;
@@ -95,4 +96,12 @@ public class ClothingItemController {
 
         return ResponseEntity.ok(generatedOutfit);
     }
+    // --- GARDIROP İSTATİSTİK ENDPOINT'İ ---
+    // URL: GET /api/v1/clothes/{userId}/stats
+    @GetMapping("/{userId}/stats")
+    public ResponseEntity<WardrobeStatsDto> getWardrobeStats(@PathVariable Long userId) {
+        WardrobeStatsDto stats = clothingItemService.getWardrobeStatistics(userId);
+        return ResponseEntity.ok(stats);
+    }
+
 }
