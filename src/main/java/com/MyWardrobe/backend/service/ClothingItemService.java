@@ -134,7 +134,7 @@ public class ClothingItemService {
             // Fiyatı, giyilme sayısına bölüyoruz. (Eğer hiç giyilmediyse 1'e böl ki sonsuzluk hatası vermesin)
             Double price = (mostWorn.getPurchasePrice() != null) ? mostWorn.getPurchasePrice() : 0.0;
             int wears = (mostWorn.getWearCount() != null && mostWorn.getWearCount() > 0) ? mostWorn.getWearCount() : 1;
-            Double cpw = Math.round((price / wears) * 100.0) / 100.0; // Virgülden sonra 2 hane (Örn: 70.50₺)
+            Double cpw = Math.round((price / wears) * 100.0) / 100.0; // Virgülden sonra 2 hane (Örn: 70.50₺) | Math.round -> 0.5 ve üzeriyse yukarı (pozitif yönde), 0.5'ten küçükse aşağı yuvarlama yapar
 
             // Ağır Entity'i, hafif DTO'ya çevir
             mostWornDto = ClothingItemDto.builder()
