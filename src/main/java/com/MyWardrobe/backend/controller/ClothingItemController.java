@@ -6,10 +6,15 @@ import com.MyWardrobe.backend.service.ClothingItemService;
 import com.MyWardrobe.backend.service.AiVisionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 // "Bean" (Spring'in yönettiği nesne)
 @RestController // Bu sınıfın bir API hizmeti sunduğunu ve cevap olarak HTML sayfası değil, saf veri (JSON) döneceğini belirtir.
@@ -21,7 +26,71 @@ public class ClothingItemController {
     private final AiVisionService aiVisionService; // Pipeline
     private final ObjectMapper objectMapper = new ObjectMapper(); // JSON metnini Java Objesine çevirir
 
-    // Kiyafet ekleme ENDPOINT'i
+    // --- 🚀 YENİ: AI ASENKRON KOMBİN PARÇALAMA (AŞAMA 1) ---
+    // URL: POST /api/v1/clothes/{userId}/ai-extract
+    @PostMapping(value = "/{userId}/ai-extract", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, String>> startAiExtraction(
+            @PathVariable Long userId,
+            @RequestPart("image") MultipartFile image) {
+        try {
+            // Fotoğrafı Python'a yolla ve sadece Fişi (Task ID) al
+            String taskId = aiVisionService.extractClothesAsync(image, "flat_lay");
+            return ResponseEntity.ok(Map.of("task_id", taskId, "message", "Yapay Zeka analizi başladı."));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // --- 🚀 YENİ: AI DURUM SORGULAMA VE VERİTABANINA KAYDETME (AŞAMA 2) ---
+    // URL: GET /api/v1/clothes/{userId}/ai-status/{taskId}
+    @GetMapping("/{userId}/ai-status/{taskId}")
+    public ResponseEntity<?> checkAiStatusAndSave(
+            @PathVariable Long userId,
+            @PathVariable String taskId) {
+        try {
+            Map<String, Object> aiResponse = aiVisionService.checkTaskStatus(taskId);
+
+            // Eğer Python işlemi bitirmişse (SUCCESS), JSON'ı parçala ve DB'ye kaydet!
+            if ("SUCCESS".equals(aiResponse.get("status"))) {
+                Map<String, Object> result = (Map<String, Object>) aiResponse.get("result");
+                List<Map<String, Object>> itemsData = (List<Map<String, Object>>) result.get("items");
+
+                List<ClothingItem> savedItems = new ArrayList<>();
+
+                for (Map<String, Object> itemData : itemsData) {
+                    String url = (String) itemData.get("url");
+                    Map<String, String> tags = (Map<String, String>) itemData.get("tags");
+
+                    ClothingItem item = new ClothingItem();
+                    item.setImageUrl(url);
+                    item.setCategory(tags.get("category"));
+                    item.setColor(tags.get("color"));
+                    item.setPattern(tags.get("pattern"));
+                    item.setSeason(tags.get("season"));
+                    item.setFormality(tags.get("style"));
+
+                    // İsim boş kalmasın diye AI verilerinden otomatik isim üretiyoruz
+                    item.setName("AI: " + tags.get("color") + " " + tags.get("category"));
+
+                    // Senin servisini çağırıp veritabanına kaydediyoruz
+                    savedItems.add(clothingItemService.addClothingItem(userId, item));
+                }
+
+                // Kaydedilen gerçek veritabanı objelerini mobile dönüyoruz
+                return ResponseEntity.ok(Map.of("status", "COMPLETED", "saved_items", savedItems));
+            }
+
+            // Eğer hala PENDING ise, mobile PENDING (Askıda işlem) döner
+            return ResponseEntity.ok(aiResponse);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // --- ESKİ: MANUEL KIYAFET EKLEME (Yedek olarak duruyor) --- [ value = "/{userId}/manual"  | addClothingItemManual]
     // Artık sadece JSON değil, MULTIPART (Dosya + Metin) paketi kabul ediyoruz.
     // URL'den kullanıcının ID'sini yakalayacağız (Örn: /api/v1/clothes/1)
     @PostMapping(value = "/{userId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -34,19 +103,13 @@ public class ClothingItemController {
             try{
                 // 1. JSON metnini (Renk, marka vs.) Java'nın anlayacağı nesneye çevir
                 ClothingItem item = objectMapper.readValue(clothingDataJson, ClothingItem.class);
+                // Not: Manuel eklemede imageUrl uygulamanın kendisinden gelmeli
 
-                // 2. Fotoğrafı Python'a yollar, temizler, Cloudinary'e atar ve linki alır!
-                String secureImageUrl = aiVisionService.uploadAndRemoveBackground(image);
-
-                // 3. Buluttan gelen bu temiz linki, kıyafetimizin içine yerleştir
-                item.setImageUrl(secureImageUrl);
-
-                // 4. Gelen kıyafet verisini ve URL'deki kullanıcı ID'sini alıp Service yolluyoruz.
+                // 2. Gelen kıyafet verisini ve URL'deki kullanıcı ID'sini alıp Service yolluyoruz.
                 ClothingItem savedItem = clothingItemService.addClothingItem(userId, item);
-
                 return ResponseEntity.ok(savedItem);
             }catch (Exception e) {
-                throw new RuntimeException("Sistem mükemmel çalışırken bir pürüz çıktı: " + e.getMessage());
+                throw new RuntimeException("Kayıt sırasında hata: " + e.getMessage());
             }
     }
 
@@ -59,7 +122,7 @@ public class ClothingItemController {
 
     //  Veritabanında yepyeni bir kayıt oluştururken  "Create -> POST"
     //  Veriyi okurken "Read -> GET" kullanmıştık.
-    //  Var olan bir kaydın üzerindeki bir veriyi (burada giyilme sayısını) güncellediğimiz için " Update -> PUT (TKaydı komple ezip yenile	-> Kıyafetin tüm detaylarını (renk, marka, isim) düzenle)"
+    //  Var olan bir kaydın üzerindeki bir veriyi (burada giyilme sayısını) güncellediğimiz için " Update -> PUT (Kaydı komple ezip yenile	-> Kıyafetin tüm detaylarını (renk, marka, isim) düzenle)"
     //  Spesifik alan güncellemeleri  için "Update -> PATCH (Kısmi güncellemeler (Yama), Sadece belli bir alanı yama yap -> Sadece giyilme sayısını (+1) artır)"
 
     // Kıyafeti Giyme Endpoint'i (Kullanıcı kıyafeti giydikçe bu adrese istek atacak)
@@ -91,9 +154,7 @@ public class ClothingItemController {
     // Kullanıcı bir kıyafete tıklayıp "Bununla kombin üret" dediğinde burası çalışır.
     @GetMapping("/{itemId}/generate-outfit")
     public ResponseEntity<java.util.List<ClothingItem>> generateOutfitWithAnchor(@PathVariable Long itemId) {
-
         java.util.List<ClothingItem> generatedOutfit = clothingItemService.generateOutfitFromAnchor(itemId);
-
         return ResponseEntity.ok(generatedOutfit);
     }
     // --- GARDIROP İSTATİSTİK ENDPOINT'İ ---
