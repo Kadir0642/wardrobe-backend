@@ -3,7 +3,7 @@ package com.MyWardrobe.backend.controller;
 import com.MyWardrobe.backend.dto.WardrobeStatsDto;
 import com.MyWardrobe.backend.entity.ClothingItem;
 import com.MyWardrobe.backend.service.ClothingItemService;
-import com.MyWardrobe.backend.service.FileUploadService;
+import com.MyWardrobe.backend.service.AiVisionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -18,7 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class ClothingItemController {
 
     private final ClothingItemService clothingItemService;
-    private final FileUploadService fileUploadService; // Pipeline
+    private final AiVisionService aiVisionService; // Pipeline
     private final ObjectMapper objectMapper = new ObjectMapper(); // JSON metnini Java Objesine çevirir
 
     // Kiyafet ekleme ENDPOINT'i
@@ -36,7 +36,7 @@ public class ClothingItemController {
                 ClothingItem item = objectMapper.readValue(clothingDataJson, ClothingItem.class);
 
                 // 2. Fotoğrafı Python'a yollar, temizler, Cloudinary'e atar ve linki alır!
-                String secureImageUrl = fileUploadService.uploadAndRemoveBackground(image);
+                String secureImageUrl = aiVisionService.uploadAndRemoveBackground(image);
 
                 // 3. Buluttan gelen bu temiz linki, kıyafetimizin içine yerleştir
                 item.setImageUrl(secureImageUrl);
