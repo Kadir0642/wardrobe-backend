@@ -17,18 +17,25 @@ public interface ClothingItemRepository extends JpaRepository<ClothingItem, Long
     List<ClothingItem> findByUserId(Long userId); // SELECT * FROM clothing_items WHERE user_id=?
 
 
-    // Esnek Filtreleme Motoru
-    // Eğer parametre boş (NULL) gelirse o şartı atlar,dolu gelirse eşleştirir.
-    // JPQL (Java Persistence Query Language)
+    // 🚀 AKILLI VE ESNEK FİLTRELEME MOTORU V2
     @Query("SELECT c FROM ClothingItem c WHERE c.user.id = :userId " +
             "AND (:category IS NULL OR c.category = :category) " +
-            "AND (:season IS NULL OR c.season = :season) " +
-            "AND (:color IS NULL OR c.color = :color)") //rengi ne olursa olsun diğer şartlara uyan tüm kıyafetleri getirir. | boş değilse istenen renkli olanları getirir.
-    List<ClothingItem> filterUserWardrobe( // Sorgudaki :category gibi iki nokta üst üste ile başlayan dinamik değişkenlerin, aşağıdaki Java parametreleriyle (Örn: String category) eşleşmesini sağlar.
+            // Renk ve Sezonlar virgülle eklendiği için "İçinde geçiyor mu?" (LIKE) diye bakıyoruz.
+            "AND (:season IS NULL OR c.season LIKE CONCAT('%', :season, '%')) " +
+            "AND (:color IS NULL OR c.color LIKE CONCAT('%', :color, '%')) " +
+            // Yeni Eklenen Sütunların Filtreleri:
+            "AND (:size IS NULL OR c.size = :size) " +
+            "AND (:material IS NULL OR c.material = :material) " +
+            "AND (:condition IS NULL OR c.condition = :condition)")
+    // Sorgudaki :category gibi iki nokta üst üste ile başlayan dinamik değişkenlerin, aşağıdaki Java parametreleriyle (Örn: String category) eşleşmesini sağlar.
+    List<ClothingItem> filterUserWardrobe(
             @Param("userId") Long userId,
             @Param("category") String category,
             @Param("season") String season,
-            @Param("color") String color
+            @Param("color") String color,
+            @Param("size") String size,
+            @Param("material") String material,
+            @Param("condition") String condition
     );
 
     // --- ÇAPA (ANCHOR) MODELİ İÇİN KATEGORİ BAZLI ARAMA --- [Arama motoruna yeni filtre ayarı]

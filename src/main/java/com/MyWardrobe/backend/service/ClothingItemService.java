@@ -9,6 +9,8 @@ import com.MyWardrobe.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class ClothingItemService {
@@ -56,9 +58,13 @@ public class ClothingItemService {
     }
 
     // Akıllı filtreleme |  Şuan veriyi Controller'dan alıp Repository'ye iletiyor (Pass-through)
-    public java.util.List<ClothingItem> filterClothes(Long userId, String category, String season, String color) {
-        System.out.println("Filtreleme çalışıyor ... Kategori: " + category + " | Sezon: " + season + " | Renk: " + color);
-        return clothingItemRepository.filterUserWardrobe(userId, category, season, color);
+    public java.util.List<ClothingItem> filterClothes(
+            Long userId, String category, String season, String color,
+            String size, String material, String condition) {
+
+        System.out.println("Filtreleme çalışıyor ... Kategori: " + category + " | Sezon: " + season);
+        return clothingItemRepository.filterUserWardrobe(
+                userId, category, season, color, size, material, condition);
     }
 
     // --- ANCHOR ALGORİTHM ---
@@ -153,5 +159,30 @@ public class ClothingItemService {
                 .totalWardrobeValue(totalValue)
                 .mostWornItem(mostWornDto)
                 .build();
+    }
+
+    // --- KIYAFET BİLGİLERİNİ GÜNCELLEME ---
+    public ClothingItem updateClothingItem(Long itemId, ClothingItem updatedData) {
+        ClothingItem existingItem = clothingItemRepository.findById(itemId)
+                .orElseThrow(() -> new RuntimeException("Kıyafet bulunamadı!"));
+
+        // Temel Bilgiler
+        if(updatedData.getBrand() != null) existingItem.setBrand(updatedData.getBrand());
+        if(updatedData.getCategory() != null) existingItem.setCategory(updatedData.getCategory());
+        if(updatedData.getColor() != null) existingItem.setColor(updatedData.getColor());
+        if(updatedData.getSeason() != null) existingItem.setSeason(updatedData.getSeason());
+        if(updatedData.getName() != null) existingItem.setName(updatedData.getName());
+
+        // Yeni Eklenen Form Bilgileri
+        if(updatedData.getSize() != null) existingItem.setSize(updatedData.getSize());
+        if(updatedData.getShoppingUrl() != null) existingItem.setShoppingUrl(updatedData.getShoppingUrl());
+        if(updatedData.getPersonalNote() != null) existingItem.setPersonalNote(updatedData.getPersonalNote());
+        if(updatedData.getDescription() != null) existingItem.setDescription(updatedData.getDescription());
+        if(updatedData.getCondition() != null) existingItem.setCondition(updatedData.getCondition());
+        if(updatedData.getMaterial() != null) existingItem.setMaterial(updatedData.getMaterial());
+        if(updatedData.getOrigin() != null) existingItem.setOrigin(updatedData.getOrigin());
+        if(updatedData.getPurchasedDate() != null) existingItem.setPurchasedDate(updatedData.getPurchasedDate());
+
+        return clothingItemRepository.save(existingItem);
     }
 }

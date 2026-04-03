@@ -50,6 +50,36 @@ public class ClothingItem {
 
     private String brand; // Örn: "BERSHKA", "Zara"
 
+    // Beden bilgisi (Örn: M, L, 42)
+    private String size;
+
+    // Linkler çok uzun olabilir, standart 255 karakter sınırını aşıp DB'yi çökertmesin diye 500 yapıyoruz.
+    @Column(name= "shopping_url", length = 500)
+    private String shoppingUrl;
+
+    // Kullanıcı buraya destan yazabilir, sınırı genişletiyoruz
+    @Column(name= "personal_note", length = 100)
+    private String personalNote;
+
+    // Kıyafet detaylı açıklaması
+    @Column(length = 100)
+    private String description;
+
+    // ⚠️ KRİTİK: "condition" kelimesi SQL'de yasaklı/özel bir kelimedir (WHERE condition).
+    // Tabloyu patlatmamak için veritabanındaki adını "item_condition" yapıyoruz ama Java'da "condition" diyoruz.
+    @Column(name = "item_condition")
+    private String condition;
+
+    // Materyal (Örn: Cotton, Polyester)
+    private String material;
+
+    // Üretim yeri (Örn: Turkey, Italy)
+    private String origin;
+
+    // Satın alınma tarihi (Şimdilik String tutuyoruz, ileride Date formatına çevrilebilir)
+    @Column(name= "purchased_date")
+    private String purchasedDate;
+
     // --- FINANSAL ANALITIK && OYUNLASTIRMA (GAMIFICATION) ---
     @Column(name="purchase_price") // kıyafet satın alma maliyeti
     private Double purchasePrice;

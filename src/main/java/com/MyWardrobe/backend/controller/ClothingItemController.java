@@ -133,19 +133,23 @@ public class ClothingItemController {
     }
 
     // Akıllı Filtreleme ENDPOINT
-    // URL: /api/v1/clothes/{userId}/filter?category=Üst Giyim&season=Yaz
+    // Örn: GET /api/v1/clothes/3/filter?category=Tops&season=WINTER&size=M
     // Mobil Uygulamanın Kullanım Senaryoları:
     //Sadece kışlıkları getir: GET /api/v1/clothes/1/filter?season=Kış
     //Siyah ve Üst Giyim getir: GET /api/v1/clothes/1/filter?category=Üst Giyim&color=Siyah
     //Hiçbir filtre yok, hepsini getir: GET /api/v1/clothes/1/filter
     @GetMapping("/{userId}/filter")
     public ResponseEntity<java.util.List<ClothingItem>> filterWardrobe( // Normalde Spring, URL'de beklediği bir parametreyi bulamazsa "400 Bad Request" (Hatalı İstek) fırlatır. required = false diyerek "Eğer kullanıcı bu filtreyi yollamazsa hata verme, değişkenin içine null koy geç" diyoruz. Bu da Repository'deki o IS NULL sorguyla  uyum içinde çalışır.
-            @PathVariable Long userId,// @PathVariable -> Kullanıcının kimliği (userId) mecburi olduğu için onu adrese gömdük
+            @PathVariable Long userId, // @PathVariable -> Kullanıcının kimliği (userId) mecburi olduğu için onu adrese gömdük
             @RequestParam(required = false) String category, // @RequestParam(required =false) Kullanıcı bu filtreyi seçmek zorunda değil | Query Parameter(Sorgu Parametresi)
             @RequestParam(required = false) String season,
-            @RequestParam(required = false) String color
+            @RequestParam(required = false) String color,
+            @RequestParam(required = false) String size,
+            @RequestParam(required = false) String material,
+            @RequestParam(required = false) String condition
     ){
-        java.util.List<ClothingItem> filteredWardrobe = clothingItemService.filterClothes(userId,category,season,color);
+        java.util.List<ClothingItem> filteredWardrobe = clothingItemService.filterClothes(
+                userId, category, season, color, size, material, condition);
         return ResponseEntity.ok(filteredWardrobe);
     }
 
@@ -163,6 +167,42 @@ public class ClothingItemController {
     public ResponseEntity<WardrobeStatsDto> getWardrobeStats(@PathVariable Long userId) {
         WardrobeStatsDto stats = clothingItemService.getWardrobeStatistics(userId);
         return ResponseEntity.ok(stats);
+    }
+
+    // ---------------------------------------------------------------------------------------------------------
+    // --- 🚀 YENİ: MOBİL UYGULAMA İÇİN DİREKT YÜKLEME KAPISI (KÖPRÜ) ---
+    // URL: POST /api/v1/clothes/upload
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, String>> uploadItemImage(@RequestPart("file") MultipartFile file) {
+        try {
+            System.out.println("📱 Mobil uygulamadan yeni fotoğraf ulaştı! Boyut: " + (file.getSize() / 1024) + " KB");
+
+            // NOT: MVP testini tamamlamak için şimdilik anında sahte bir (Mock) AI çıktısı URL'si dönüyoruz.
+            // Sistemi test ettikten hemen sonra burayı senin o muazzam AiVisionService (Celery) yapına bağlayacağız.
+            String mockProcessedImageUrl = "https://images.unsplash.com/photo-1515347619362-75fe80111eb9?w=400";
+
+            // React Native'in beklediği "imageUrl" anahtarını dönüyoruz
+            return ResponseEntity.ok(Map.of(
+                    "message", "Yapay zeka işlemi başarılı!",
+                    "imageUrl", mockProcessedImageUrl
+            ));
+
+        } catch (Exception e) {
+            System.err.println("Yükleme sırasında hata: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Sunucu hatası: " + e.getMessage()));
+        }
+    }
+
+    // URL: PUT /api/v1/clothes/{itemId}
+    // Mobil uygulamadan gelen detayları kaydeder
+    @PutMapping("/{itemId}")
+    public ResponseEntity<ClothingItem> updateItemDetails(
+            @PathVariable Long itemId,
+            @RequestBody ClothingItem itemDetails) {
+
+        ClothingItem updatedItem = clothingItemService.updateClothingItem(itemId, itemDetails);
+        return ResponseEntity.ok(updatedItem);
     }
 
 }
