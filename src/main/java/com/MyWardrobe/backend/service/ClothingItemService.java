@@ -174,6 +174,7 @@ public class ClothingItemService {
         if(updatedData.getName() != null) existingItem.setName(updatedData.getName());
 
         // Yeni Eklenen Form Bilgileri
+        if(updatedData.getSubCategory() != null) {existingItem.setSubCategory(updatedData.getSubCategory());}
         if(updatedData.getSize() != null) existingItem.setSize(updatedData.getSize());
         if(updatedData.getShoppingUrl() != null) existingItem.setShoppingUrl(updatedData.getShoppingUrl());
         if(updatedData.getPersonalNote() != null) existingItem.setPersonalNote(updatedData.getPersonalNote());
