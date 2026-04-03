@@ -142,6 +142,7 @@ public class ClothingItemController {
     public ResponseEntity<java.util.List<ClothingItem>> filterWardrobe( // Normalde Spring, URL'de beklediği bir parametreyi bulamazsa "400 Bad Request" (Hatalı İstek) fırlatır. required = false diyerek "Eğer kullanıcı bu filtreyi yollamazsa hata verme, değişkenin içine null koy geç" diyoruz. Bu da Repository'deki o IS NULL sorguyla  uyum içinde çalışır.
             @PathVariable Long userId, // @PathVariable -> Kullanıcının kimliği (userId) mecburi olduğu için onu adrese gömdük
             @RequestParam(required = false) String category, // @RequestParam(required =false) Kullanıcı bu filtreyi seçmek zorunda değil | Query Parameter(Sorgu Parametresi)
+            @RequestParam(required = false) String subCategory,
             @RequestParam(required = false) String season,
             @RequestParam(required = false) String color,
             @RequestParam(required = false) String size,
@@ -149,7 +150,7 @@ public class ClothingItemController {
             @RequestParam(required = false) String condition
     ){
         java.util.List<ClothingItem> filteredWardrobe = clothingItemService.filterClothes(
-                userId, category, season, color, size, material, condition);
+                userId, category,subCategory, season, color, size, material, condition);
         return ResponseEntity.ok(filteredWardrobe);
     }
 

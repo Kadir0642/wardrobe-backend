@@ -31,6 +31,7 @@ public interface ClothingItemRepository extends JpaRepository<ClothingItem, Long
     List<ClothingItem> filterUserWardrobe(
             @Param("userId") Long userId,
             @Param("category") String category,
+            @Param("subCategory") String subCategory,
             @Param("season") String season,
             @Param("color") String color,
             @Param("size") String size,

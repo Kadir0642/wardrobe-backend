@@ -59,12 +59,12 @@ public class ClothingItemService {
 
     // Akıllı filtreleme |  Şuan veriyi Controller'dan alıp Repository'ye iletiyor (Pass-through)
     public java.util.List<ClothingItem> filterClothes(
-            Long userId, String category, String season, String color,
+            Long userId, String category,String subCategory, String season, String color,
             String size, String material, String condition) {
 
         System.out.println("Filtreleme çalışıyor ... Kategori: " + category + " | Sezon: " + season);
         return clothingItemRepository.filterUserWardrobe(
-                userId, category, season, color, size, material, condition);
+                userId, category,subCategory, season, color, size, material, condition);
     }
 
     // --- ANCHOR ALGORİTHM ---
