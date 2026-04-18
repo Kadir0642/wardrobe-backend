@@ -38,7 +38,7 @@ public class OutfitFeedbackLog {
     @Enumerated(EnumType.STRING)
     @Column(name = "reason_code")
     private FeedbackReason reasonCode;
-    // Referans görsellerinden çıkardığımız spesifik ret nedenleri
+    // Referans olarak çıkardığımız spesifik ret nedenleri
 
     @ElementCollection
     @CollectionTable(name = "feedback_target_items", joinColumns = @JoinColumn(name = "log_id"))
