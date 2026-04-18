@@ -26,7 +26,7 @@ public class ClothingItemController {
     private final AiVisionService aiVisionService; // Pipeline
     private final ObjectMapper objectMapper = new ObjectMapper(); // JSON metnini Java Objesine çevirir
 
-    // --- 🚀 YENİ: AI ASENKRON KOMBİN PARÇALAMA (AŞAMA 1) ---
+    // ---  YENİ: AI ASENKRON KOMBİN PARÇALAMA (AŞAMA 1) ---
     // URL: POST /api/v1/clothes/{userId}/ai-extract
     @PostMapping(value = "/{userId}/ai-extract", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, String>> startAiExtraction(
@@ -42,7 +42,7 @@ public class ClothingItemController {
         }
     }
 
-    // --- 🚀 YENİ: AI DURUM SORGULAMA VE VERİTABANINA KAYDETME (AŞAMA 2) ---
+    // ---  YENİ: AI DURUM SORGULAMA VE VERİTABANINA KAYDETME (AŞAMA 2) ---
     // URL: GET /api/v1/clothes/{userId}/ai-status/{taskId}
     @GetMapping("/{userId}/ai-status/{taskId}")
     public ResponseEntity<?> checkAiStatusAndSave(
@@ -73,7 +73,7 @@ public class ClothingItemController {
                     // İsim boş kalmasın diye AI verilerinden otomatik isim üretiyoruz
                     item.setName("AI: " + tags.get("color") + " " + tags.get("category"));
 
-                    // Senin servisini çağırıp veritabanına kaydediyoruz
+                    // Servisi çağırıp veritabanına kaydediyoruz
                     savedItems.add(clothingItemService.addClothingItem(userId, item));
                 }
 
@@ -171,15 +171,15 @@ public class ClothingItemController {
     }
 
     // ---------------------------------------------------------------------------------------------------------
-    // --- 🚀 YENİ: MOBİL UYGULAMA İÇİN DİREKT YÜKLEME KAPISI (KÖPRÜ) ---
+    // ---  YENİ: MOBİL UYGULAMA İÇİN DİREKT YÜKLEME KAPISI (KÖPRÜ) ---
     // URL: POST /api/v1/clothes/upload
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, String>> uploadItemImage(@RequestPart("file") MultipartFile file) {
         try {
-            System.out.println("📱 Mobil uygulamadan yeni fotoğraf ulaştı! Boyut: " + (file.getSize() / 1024) + " KB");
+            System.out.println(" Mobil uygulamadan yeni fotoğraf ulaştı! Boyut: " + (file.getSize() / 1024) + " KB");
 
             // NOT: MVP testini tamamlamak için şimdilik anında sahte bir (Mock) AI çıktısı URL'si dönüyoruz.
-            // Sistemi test ettikten hemen sonra burayı senin o muazzam AiVisionService (Celery) yapına bağlayacağız.
+            // Sistemi test ettikten hemen sonra burayı  AiVisionService (Celery) yapına bağlayacağız.
             String mockProcessedImageUrl = "https://images.unsplash.com/photo-1515347619362-75fe80111eb9?w=400";
 
             // React Native'in beklediği "imageUrl" anahtarını dönüyoruz

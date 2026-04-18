@@ -25,7 +25,7 @@ import java.util.List;
 public class OutfitService {
 
     // Bir kombin oluşturmak için kullanıcıyı doğrulamak, kombine parça eklemek için ise o kıyafeti doğrulamalıyız
-    private final OutfitRepository outfitRepository; // Dependency Injection X 3 kez
+    private final OutfitRepository outfitRepository; // Dependency Injection X 4 kez
     private final OutfitLogRepository outfitLogRepository;
     private final UserRepository userRepository;
     private final ClothingItemRepository clothingItemRepository; // Parçaların giyilme sayısını artırmak için lazım

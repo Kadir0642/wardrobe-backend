@@ -133,7 +133,7 @@ public class ClothingItemService {
 
         // 3. En çok giyilen favori parçayı bul
         ClothingItem mostWorn = clothingItemRepository.findFirstByUserIdOrderByWearCountDesc(userId);
-        ClothingItemDto mostWornDto = null;
+        ClothingItemDto mostWornDto = null; // null ataması, değişkeni başlatmak (initialize) için yapılan bir hazırlık
 
         if (mostWorn != null) {
             // CPW (Cost Per Wear - Giyme Başına Maliyet) Hesaplaması
@@ -173,7 +173,7 @@ public class ClothingItemService {
         if(updatedData.getSeason() != null) existingItem.setSeason(updatedData.getSeason());
         if(updatedData.getName() != null) existingItem.setName(updatedData.getName());
 
-        // Yeni Eklenen Form Bilgileri
+        // Yeni Eklenen Form Bilgileri  -- DÜZENLENECEK GEREKSİZ DETAY BİLGİLER VAR
         if(updatedData.getSubCategory() != null) {existingItem.setSubCategory(updatedData.getSubCategory());}
         if(updatedData.getSize() != null) existingItem.setSize(updatedData.getSize());
         if(updatedData.getShoppingUrl() != null) existingItem.setShoppingUrl(updatedData.getShoppingUrl());
