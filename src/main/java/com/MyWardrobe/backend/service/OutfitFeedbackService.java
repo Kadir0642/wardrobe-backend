@@ -14,7 +14,9 @@ public class OutfitFeedbackService { // Log, program çalışırken arkada neler
  // Decoupling (Bağımsızlık): Kodunu loglama kütüphanesine esir etmezsin.
  //Standart Dil: Herkesin anlayacağı ortak bir "hata yazma" protokolü kullanırsın.
  //Performans: Log mesajlarını oluştururken ({} kullanarak) sadece gerekiyorsa işlem yapar, böylece gereksiz string birleştirmeleriyle sistemi yormazsın
+
     private final OutfitFeedbackRepository feedbackRepository;
+    private final AiServiceClient aiServiceClient; // Python'a bağlanacak servis eklendi
 
     public void saveFeedback(OutfitFeedbackDto dto) {
         // DTO'dan gelen veriyi Entity builder ile inşa ediyoruz
@@ -28,6 +30,13 @@ public class OutfitFeedbackService { // Log, program çalışırken arkada neler
                 .build();
 
         feedbackRepository.save(logEntity);
-        log.info("AI Geri Bildirimi Kaydedildi - Kullanıcı ID: {}, Tip: {}", dto.getUserId(), dto.getFeedbackType());
+        log.info("✅ Geri Bildirim Veritabanına Kaydedildi - Sebep: {}", dto.getReasonCode());
+
+// 🚀 KOPUK KABLO BURASIYDI: Java veriyi kaydettikten sonra Python'a fırlatmalı!
+        try {
+            aiServiceClient.sendFeedbackToAi(dto);
+        } catch (Exception e) {
+            log.error("Python'a RLHF fırlatılırken hata oluştu: {}", e.getMessage());
+        }
     }
 }
