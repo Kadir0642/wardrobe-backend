@@ -1,0 +1,79 @@
+package com.vestify.backend.domain.wardrobe.controller;
+
+import com.vestify.backend.domain.wardrobe.dto.ClothingItemDto;
+import com.vestify.backend.domain.wardrobe.entity.ClothingItem;
+import com.vestify.backend.domain.wardrobe.service.ClothingItemService;
+import com.vestify.backend.core.ai.service.AiIntegrationService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Mono;
+import java.util.Map;
+
+// Bu controller; görsel yükleme desteği, tip güvenliği olan
+// filtreleme ve yüksek performanslı sayfalama yapısıyla projenin en sağlam parçalarından biri
+
+
+// "Bean" (Spring'in yönettiği nesne)
+@RestController // Bu sınıfın bir API hizmeti sunduğunu ve cevap olarak HTML sayfası değil, saf veri (JSON) döneceğini belirtir.
+@RequestMapping("/api/v1/clothes") // Kıyafetlerle ilgili tüm işlemlerin ana adresi.
+@RequiredArgsConstructor // dependency enjection
+public class ClothingItemController {
+
+    private final ClothingItemService clothingItemService;
+    private final AiIntegrationService aiIntegrationService;
+
+    // Spring Boot, Multipart form içindeki JSON'ı @RequestPart ile otomatik DTO'ya çevirir!
+    @PostMapping(value = "/{userId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE) // Bu, API'ye "Sana sadece metin gelmeyecek, aynı zamanda bir görsel dosyası da gelecek" demektir.
+    public ResponseEntity<ClothingItemDto> addClothingItem(
+            @PathVariable Long userId,
+            @RequestPart("image") MultipartFile image, // Kullanıcının telefonundan seçtiği ham görsel dosyasını (fotoğrafı) yakalar
+            @RequestPart("data") ClothingItem itemData) { // Görselin yanındaki JSON verisini (kıyafetin adı, rengi vb.) yakalayıp otomatik olarak ClothingItem nesnesine çeviri
+
+        // Not: Gerçek senaryoda burada önce image'i Cloudinary'e yükleyip URL'sini itemData'ya set edeceğiz.
+        ClothingItem savedItem = clothingItemService.addClothingItem(userId, itemData);
+
+        // Entity'yi DTO'ya çevirip dışarı veriyoruz (Ağır veriler gizlendi)
+        ClothingItemDto responseDto = ClothingItemDto.builder()
+                .id(savedItem.getId())
+                .name(savedItem.getName())
+                .category(savedItem.getCategory())
+                .imageUrl(savedItem.getImageUrl())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
+    }
+
+    // Örn: /api/v1/clothes/2?page=0&size=20
+    @GetMapping("/{userId}")
+    public ResponseEntity<Page<ClothingItem>> getUserWardrobe(
+            @PathVariable Long userId,
+            @PageableDefault(size = 20) Pageable pageable) { // Varsayılan 20 parça getir
+
+        Page<ClothingItem> wardrobe = clothingItemService.getUserWardrobe(userId, pageable);
+        return ResponseEntity.ok(wardrobe);
+    }
+
+    // Filtreleme (Sayfalamalı)
+    @GetMapping("/{userId}/filter")
+    public ResponseEntity<Page<ClothingItem>> filterWardrobe(
+            @PathVariable Long userId,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String subCategory,
+            @RequestParam(required = false) String season,
+            @RequestParam(required = false) String color,
+            @RequestParam(required = false) String size,
+            @RequestParam(required = false) String condition,
+            @PageableDefault(size = 20) Pageable pageable) {
+
+        Page<ClothingItem> filteredWardrobe = clothingItemService.filterClothes(
+                userId, category, subCategory, season, color, size, condition, pageable);
+        return ResponseEntity.ok(filteredWardrobe);
+    }
+}

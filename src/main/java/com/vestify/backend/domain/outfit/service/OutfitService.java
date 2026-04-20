@@ -96,7 +96,7 @@ public class OutfitService {
         return outfitLogRepository.save(logRecord);
     }
 
-    private OutfitDto convertToDto(Outfit outfit) {
+    public OutfitDto convertToDto(Outfit outfit) {
         Set<ClothingItemDto> itemDtos = outfit.getClothingItems().stream()
                 .map(item -> ClothingItemDto.builder()
                         .id(item.getId())
