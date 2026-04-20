@@ -23,23 +23,32 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+
+// Bu servis, uygulamanın "Gardırop ve Kombin Yönetimi" merkezi.
+// Sadece veri kaydetmiyor, aynı zamanda verimlilik ve performans odaklı (Sayfalama, Batching) yaklaşımlar içeriyor.
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class OutfitService {
 
+    // Dört farklı tabloya erişiyor : bu sebeple servis oldukça merkezi bir düğüm noktasıdır.
     private final OutfitRepository outfitRepository;
     private final OutfitLogRepository outfitLogRepository;
     private final UserRepository userRepository;
     private final ClothingItemRepository clothingItemRepository;
 
-    @Transactional
+    @Transactional // Kullanıcın seçtiği parçaları bir araya getirip bir "Kombin" olarak kaydeder.
     public Outfit saveOutfit(Long userId, String outfitName, List<Long> clothingItemIds) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı!"));
 
         List<ClothingItem> itemsList = clothingItemRepository.findAllById(clothingItemIds);
         Set<ClothingItem> itemsSet = new HashSet<>(itemsList); // Performans için Set'e çevirdik
+        // HashSet Kullanımı: itemsList (Liste) olarak gelen parçaları Set'e çeviriyoruz.
+        // Neden? Çünkü bir kombinde aynı kıyafetten iki tane olamaz.
+        // Set veri yapısı tekrar eden (yinelenen) kayıtları engellerken arama performansını artırır
+
 
         Outfit newOutfit = Outfit.builder()
                 .user(user)
@@ -52,21 +61,23 @@ public class OutfitService {
     }
 
     // ARTIK SAYFALAMALI VE N+1 KORUMALI ÇALIŞIYOR!
-    @Transactional(readOnly = true)
+    // Pageable -> Eğer kullanıcının 500 tane kombini varsa, hepsini tek seferde çekmek uygulamayı yavaşlatır ve belleği (RAM) tüketir.
+    // Page<OutfitDto> dönerek sadece istenen sayfayı (örneğin ilk 10 kaydı) getirirsin.
+    @Transactional(readOnly = true) // Veritabanına "Sadece okuma yapacağım, veriyi değiştirmeyeceğim" diyorsun. Bu, veritabanı seviyesinde performans optimizasyonu sağlar.
     public Page<OutfitDto> getUserOutfits(Long userId, Pageable pageable) {
-        // Not: OutfitRepository'de sayfalamalı metod yazılmalıydı.
+        // Not: OutfitRepository'de sayfalamalı metod yazılmalı.
         // Bunu Controller'ı yazarken EntityGraph ile birlikte Page dönecek şekilde bağlayacağız.
-        return outfitRepository.findAll(pageable).map(this::convertToDto);
+        return outfitRepository.findByUserId(userId, pageable).map(this::convertToDto);
     }
 
     // @Transactional ekleyerek "Hibernate Batching" (Toplu İşlem) gücünü açtık. Artık 5 güncelleme
     // veritabanına tek bir paket halinde, ışık hızında gidiyor. Ayrıca listelemeyi Sayfalama (Page) yapısına geçirdik.
-    @Transactional // Döngü içindeki tüm save işlemleri tek bir SQL paketinde yollanır!
+    @Transactional // Döngü içindeki tüm save işlemleri tek bir SQL paketinde (SQL Batch) yollanır! | veritabanı ile uygulama arasındaki "git-gel" trafiğini azaltır.
     public OutfitLog logOutfit(Long userId, Long outfitId, String weather, Integer temperature) {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı!"));
         Outfit outfit = outfitRepository.findById(outfitId).orElseThrow(() -> new RuntimeException("Kombin bulunamadı!"));
 
-        // Domino Etkisi: Giyilme sayılarını artır
+        // Kombindeki her bir kıyafetin giyilme sayılarını artır kombindeki her bir kıyafetin
         for (ClothingItem item : outfit.getClothingItems()) {
             int currentWears = (item.getWearCount() == null) ? 0 : item.getWearCount();
             item.setWearCount(currentWears + 1);

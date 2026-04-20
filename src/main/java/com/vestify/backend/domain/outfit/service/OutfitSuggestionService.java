@@ -1,6 +1,6 @@
 package com.vestify.backend.domain.outfit.service;
 
-import com.vestify.backend.core.ai.service.AiIntegrationService; // YENİ: AiServiceClient yerine Core'daki kabloyu kullanıyoruz.
+import com.vestify.backend.core.ai.service.AiIntegrationService;
 import com.vestify.backend.domain.outfit.dto.AiScoreRequestDto;
 import com.vestify.backend.domain.outfit.dto.AiScoreResponseDto;
 import com.vestify.backend.domain.wardrobe.entity.ClothingItem;
@@ -13,13 +13,15 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.stream.Collectors;
 
+// Bu service, rastgele kıyafet seçmiyor; seçtiği kombinleri Python AI servisine onaylatana kadar (veya deneme sınırı dolana kadar) denemeye devam ediyor.
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class OutfitSuggestionService {
 
     private final ClothingItemRepository clothingItemRepository;
-    private final AiIntegrationService aiIntegrationService; // YENİ KABLO BAĞLANDI
+    private final AiIntegrationService aiIntegrationService;
 
     // 3 Katmanlı Şablon (Blueprint) Sistemi
     private static final List<List<String>> AI_BLUEPRINTS = Arrays.asList(
@@ -28,11 +30,13 @@ public class OutfitSuggestionService {
             Arrays.asList("Outerwear", "Tops", "Bottoms", "Footwear", "Accessories", "Accessories")       // 2: Layered
     );
 
+    //  --- Akıllı Seçim ve Filtreleme ---
     public List<ClothingItem> generateSuggestion(Long userId, int blueprintIndex, String weatherContext) {
         log.info("Kullanıcı {} için {} numaralı şablonla kombin üretiliyor...", userId, blueprintIndex);
 
         // Mimar Notu: İleride Soft Delete yapısına tam geçildiğinde burası
-        // clothingItemRepository.findByUserIdAndStatusNot(userId, ItemStatus.DELETED) olarak güncellenecek!
+        // Soft Delete Kontrolü: findByUserIdAndStatusNot(userId, ItemStatus.DELETED) ile
+        // kullanıcının dolabındaki silinmiş öğeleri hariç tutarak güncel kıyafet listesini çeker.
         List<ClothingItem> userWardrobe = clothingItemRepository.findByUserIdAndStatusNot(userId, ItemStatus.DELETED);
 
         // Dolap boşsa direkt boş liste dön, sistemi yorma
@@ -43,38 +47,67 @@ public class OutfitSuggestionService {
         int indexToUse = (blueprintIndex >= 0 && blueprintIndex < AI_BLUEPRINTS.size()) ? blueprintIndex : 0;
         List<String> selectedBlueprint = AI_BLUEPRINTS.get(indexToUse);
 
-        int maxRetries = 5; // AI'ın onaylaması için maksimum deneme sayısı
-        int attempts = 0;
+
+        int maxAiRetries = 5; // AI'ın onaylaması için maksimum deneme sayısı
+        int maxLocalAttempts = 20; // Dolap darsa, kendi içimizde sonsuz döngüye girmemek için sınır!
+        int aiAttempts = 0;
+        int localAttempts = 0;
+
         List<ClothingItem> bestOutfitSoFar = new ArrayList<>();
         double highestScore = -1.0;
 
+        // MİMARİ EKLENTİ: Daha önce denenen kombinlerin parmak izini tutan hafıza
+        Set<String> triedCombinations = new HashSet<>();
+
         Random random = new Random();
 
-        // 🚀 DÖNGÜ BAŞLIYOR (Maksimum 5 kere dener)
-        while (attempts < maxRetries) {
-            attempts++;
+        // Döngü: Hem AI deneme hakkımız hem de Yerel deneme hakkımız bitene kadar
+        while (aiAttempts < maxAiRetries && localAttempts < maxLocalAttempts) {
+            localAttempts++;
             List<ClothingItem> currentAttemptOutfit = new ArrayList<>();
-            Set<Long> usedIds = new HashSet<>();
+            Set<Long> usedIdsInCurrentOutfit = new HashSet<>();
 
             // 1. Rastgele Kombini Oluştur
             for (String category : selectedBlueprint) {
                 List<ClothingItem> matchingItems = userWardrobe.stream()
-                        .filter(item -> category.equalsIgnoreCase(item.getCategory()) && !usedIds.contains(item.getId()))
+                        .filter(item -> category.equalsIgnoreCase(item.getCategory()) && !usedIdsInCurrentOutfit.contains(item.getId()))
                         .collect(Collectors.toList());
 
                 if (!matchingItems.isEmpty()) {
                     ClothingItem randomItem = matchingItems.get(random.nextInt(matchingItems.size()));
                     currentAttemptOutfit.add(randomItem);
-                    usedIds.add(randomItem.getId());
+                    usedIdsInCurrentOutfit.add(randomItem.getId());
                 }
             }
+
+            // Güvenlik: Eğer hiçbir şey eşleşmediyse (boş kombin çıktıysa) atla
+            if (currentAttemptOutfit.isEmpty()) {
+                continue;
+            }
+
+            // OUTFIT HASHING (KOMBİN PARMAK İZİ)
+            // Kombindeki kıyafetlerin ID'lerini sıralayıp birleştiriyoruz (Örn: "15-42-88")
+            // Sıralıyoruz çünkü (15-42) ile (42-15) aynı kombindir!
+            String outfitHash = currentAttemptOutfit.stream()
+                    .map(item -> String.valueOf(item.getId()))
+                    .sorted()
+                    .collect(Collectors.joining("-"));
+
+            // Eğer bu kombini daha önce denediysek, AI'ı boşuna yorma ve direkt yeni baştan üret!
+            if (triedCombinations.contains(outfitHash)) {
+                log.debug("Bu kombin daha önce denendi (Hash: {}). AI çağrısı yapılmadan atlanıyor.", outfitHash);
+                continue; // aiAttempts'i artırmadan direkt başa dön!
+            }
+
+            // Yeni bir kombin bulduk, hafızaya ekle
+            triedCombinations.add(outfitHash);
+            aiAttempts++; // Artık gerçekten AI'a gidiyoruz, hakkımızı 1 düşür.
 
             // 2. Python AI'a Sorulacak DTO'yu Hazırla
             List<AiScoreRequestDto.ItemFeatureDto> features = currentAttemptOutfit.stream().map(item ->
                     AiScoreRequestDto.ItemFeatureDto.builder()
                             .id(item.getId())
                             .category(item.getCategory())
-                            // SubCategory eklendi, Pattern SİLİNDİ!
                             .subCategory(item.getSubCategory() != null ? item.getSubCategory() : "unknown")
                             .color(item.getColor() != null ? item.getColor() : "unknown")
                             .style(item.getFormality() != null ? item.getFormality() : "unknown")
@@ -89,20 +122,19 @@ public class OutfitSuggestionService {
 
             // 3. AI'a Gönder ve Cevabı Al (GÜNCELLEME BURADA)
             // Asenkron metodu çağırdık ve .block() ile AI'ın cevabını bekledik.
+            // Metodun çağrıldığı anda sonuç hemen dönmez. İşlem arka planda devam ederken, ana akış bloklanmaz.
             AiScoreResponseDto aiResponse = null;
-            try {
+            try { // scoreOutfitAsync(...) -> aslında asenkron bir metod (Mono (en fazla bir adet sonuç veya hata üretir) döner). Ancak burada kombin önerisi anlık bir sonuç gerektirdiği için .block() kullanarak AI'dan cevap gelene kadar akışı bekletiyoruz.
                 aiResponse = aiIntegrationService.scoreOutfitAsync(scoreRequest).block();
             } catch (Exception e) {
                 log.error("AI Skorlama sırasında hata oluştu: {}", e.getMessage());
             }
 
-            // Fallback (Güvenlik Ağı): Eğer AI çökerse döngüyü kırma, pas geç.
             if (aiResponse == null) {
                 log.warn("AI'dan boş yanıt alındı, bir sonraki denemeye geçiliyor...");
                 continue;
             }
 
-            // En yüksek skorlu olanı cepte tutuyoruz (Eğer hiçbiri onaylanmazsa en iyisini vereceğiz)
             if (aiResponse.getScore() > highestScore) {
                 highestScore = aiResponse.getScore();
                 bestOutfitSoFar = new ArrayList<>(currentAttemptOutfit);
@@ -110,15 +142,15 @@ public class OutfitSuggestionService {
 
             // 4. Onay Kontrolü
             if (Boolean.TRUE.equals(aiResponse.getApproved())) {
-                log.info("✅ AI Kombini Onayladı! (Deneme: {}, Skor: {})", attempts, aiResponse.getScore());
-                return currentAttemptOutfit; // Onaylandıysa döngüyü kır ve kombini ver!
+                log.info("✅ AI Kombini Onayladı! (AI Denemesi: {}, Yerel Deneme: {}, Skor: {})", aiAttempts, localAttempts, aiResponse.getScore());
+                return currentAttemptOutfit;
             } else {
-                log.warn("❌ AI Reddetti (Skor: {}). Yeniden deneniyor... (Deneme: {})", aiResponse.getScore(), attempts);
+                log.warn("❌ AI Reddetti (Skor: {}). Yeniden deneniyor...", aiResponse.getScore());
             }
         }
 
         // 5. DEVRE KESİCİ (Fallback)
-        log.warn("⚠️ Maksimum deneme sayısına ulaşıldı! Bulunan en iyi kombin dönülüyor. (Skor: {})", highestScore);
+        log.warn("⚠️ Deneme sınırlarına ulaşıldı! (AI Çağrısı: {}, Yerel: {}). Bulunan en iyi kombin dönülüyor. (Skor: {})", aiAttempts, localAttempts, highestScore);
         return bestOutfitSoFar;
     }
 }

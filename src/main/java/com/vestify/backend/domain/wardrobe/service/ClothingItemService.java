@@ -13,6 +13,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+// Bu servis, uygulamanın "Dijital Gardırop" yöneticisidir.
+// Kıyafetlerin sisteme dahil edilmesi, listelenmesi ve "silinmesi" gibi kritik işlemleri yönetir.
+// Veriyi gerçekten silmek yerine "Soft Delete" kullanmasıdır. | Sadece kullanıcı görmeyecek ama sistemde durmaya devam edecek.
+//  Enum kullanımı sayesinde veritabanında "Kış" yerine "WINTER" gibi standart değerlerin tutulmasını garanti altına alıyor.
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -21,7 +26,7 @@ public class ClothingItemService {
     private final UserRepository userRepository;
     private final ClothingItemRepository clothingItemRepository;
 
-    public ClothingItem addClothingItem(Long userId, ClothingItem item) {
+    public ClothingItem addClothingItem(Long userId, ClothingItem item) { // Gelen kıyafeti (item), userId üzerinden bulduğu kullanıcıyla eşleştirir.
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı!"));
         item.setUser(user);
@@ -31,13 +36,13 @@ public class ClothingItemService {
     }
 
     // SAYFALAMALI VE SİLİNMİŞLERİ GİZLEYEN DOLAP GETİRME
-    public Page<ClothingItem> getUserWardrobe(Long userId, Pageable pageable) {
+    public Page<ClothingItem> getUserWardrobe(Long userId, Pageable pageable) { // binlerce kıyafeti tek seferde çekip sistemi yormamak için sayfalama (Pageable) kullanır.
         return clothingItemRepository.findByUserIdAndStatusNot(userId, ItemStatus.DELETED, pageable);
     }
 
-    // SOFT DELETE: Veritabanından silme, durumunu değiştir!
-    public void deleteClothingItem(Long itemId) {
-        ClothingItem item = clothingItemRepository.findById(itemId)
+    // SOFT DELETE: Veritabanından silmeyip, durumunu "DELETED" olarak değiştir!
+    public void deleteClothingItem(Long itemId) { // Eğer kullanıcı yanlışlıkla sildiyse geri getirebilirsin veya o kıyafet geçmişteki bir kombinde (OutfitLog) kayıtlıysa
+        ClothingItem item = clothingItemRepository.findById(itemId) // veritabanı ilişkileri bozulmaz. Veri bütünlüğünü korumak için en güvenli yoldur.
                 .orElseThrow(() -> new RuntimeException("Kıyafet bulunamadı!"));
         item.setStatus(ItemStatus.DELETED);
         clothingItemRepository.save(item);
