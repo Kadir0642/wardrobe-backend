@@ -15,10 +15,11 @@ spring:
 
   # Hibernate / JPA Ayarlari (Tablolari otomatik olusturacak kisim)
   jpa:
-    hibernate:
-      ddl-auto: update # Biz Java'da Entity yazinca, gidip veritabaninda tabloyu kendi olusturur
+    hibernate: # create -> eski tabloları siler ve yepyeni mimarimize göre sıfırdan yaratır.
+      ddl-auto: update # update -> Biz Java'da Entity yazinca, gidip veritabaninda tabloyu kendi olusturur
     show-sql: true # Arka planda calısan (SELECT, INSERT, UPDATE)  SQL sorgularini konsolda görmemizi saglar
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect # Hibernate'e sorguları oluştururken tam olarak PostgreSQL dilinde yaz.
         format_sql: true # SQL sorguları terminalde gösterir
+    open-in-view: false
