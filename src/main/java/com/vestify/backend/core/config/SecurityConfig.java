@@ -1,4 +1,4 @@
-package com.vestify.backend.config;
+package com.vestify.backend.core.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
