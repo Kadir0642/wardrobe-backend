@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Mono;
+
+import java.io.IOException;
 import java.util.Map;
 
 // Bu controller; görsel yükleme desteği, tip güvenliği olan
@@ -75,5 +77,23 @@ public class ClothingItemController {
         Page<ClothingItem> filteredWardrobe = clothingItemService.filterClothes(
                 userId, category, subCategory, season, color, size, condition, pageable);
         return ResponseEntity.ok(filteredWardrobe);
+    }
+
+    @PostMapping(value = "/{userId}/ai-extract", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Mono<ResponseEntity<Map<String, String>>> extractClothesAi(
+            @PathVariable Long userId,
+            @RequestPart("image") MultipartFile image) {
+
+        try {
+            // Orijinal servisindeki extractClothesAsync metodunu çağırıyoruz
+            return aiIntegrationService.extractClothesAsync(image, "flat_lay")
+                    .map(taskId -> ResponseEntity.status(HttpStatus.ACCEPTED).body(Map.of(
+                            "task_id", taskId,
+                            "message", "Yapay Zeka analizi başladı."
+                    )));
+        } catch (IOException e) {
+            return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Görsel okunurken bir hata oluştu.")));
+        }
     }
 }
