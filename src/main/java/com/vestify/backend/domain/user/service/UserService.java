@@ -36,6 +36,9 @@ public class UserService {
         user.setIsPublic(false); // Kullanıcı profili varsayılan olarak gizli başlar.
         user.setIsActive(true); // Kayıt anında true yapılır. | Soft delete bayrağı varsayılan olarak açık
 
+        // Kayıt olan herkese varsayılan "USER" rolünü veriyoruz!
+        user.setRole(com.vestify.backend.domain.user.enums.Role.USER);
+
         log.info("Kullanıcı başarıyla oluşturuldu: {}", user.getEmail());
         return userRepository.save(user);
     }
