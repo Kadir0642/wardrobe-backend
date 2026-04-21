@@ -87,7 +87,7 @@ public class AiIntegrationService {
         body.add("mode", mode);
 
         return aiWebClient.post()
-                .uri("http://localhost:8000/api/v1/vision/extract-async")
+                .uri("http://python_ai_api:8000/api/v1/vision/extract-async")
                 .contentType(MediaType.MULTIPART_FORM_DATA) // MULTIPART_FORM_DATA -> Standart bir JSON değil, içinde dosya olan bir form gönderdiğimizi belirtir.
                 .body(BodyInserters.fromMultipartData(body))
                 .retrieve()
