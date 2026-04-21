@@ -6,11 +6,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 public class WebClientConfig {
-
     @Bean
     public WebClient aiWebClient() {
         return WebClient.builder()
-                .baseUrl("http://localhost:8000") // Python FastAPI sunucumuzun adresi
+                // 🚀 DÜZELTME: Docker içindeki servis adını kullanıyoruz!
+                .baseUrl("http://python_ai_api:8000") 
                 .build();
     }
 }
