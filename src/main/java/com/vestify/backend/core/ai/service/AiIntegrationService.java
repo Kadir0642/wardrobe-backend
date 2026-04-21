@@ -86,9 +86,12 @@ public class AiIntegrationService {
         });
         body.add("mode", mode);
 
-        return aiWebClient.post()
+        // 🚀 KESİN ÇÖZÜM: Config'e güvenmek yerine, WebClient'ı doğrudan adresiyle burada yaratıyoruz!
+        WebClient directClient = WebClient.create("http://python-ai-api:8000");
+
+        return directClient.post()
                 .uri("/api/v1/vision/extract-async")
-                .contentType(MediaType.MULTIPART_FORM_DATA) // MULTIPART_FORM_DATA -> Standart bir JSON değil, içinde dosya olan bir form gönderdiğimizi belirtir.
+                .contentType(MediaType.MULTIPART_FORM_DATA)   // MULTIPART_FORM_DATA -> Standart bir JSON değil, içinde dosya olan bir form gönderdiğimizi belirtir.
                 .body(BodyInserters.fromMultipartData(body))
                 .retrieve()
                 .bodyToMono(Map.class)
