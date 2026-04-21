@@ -99,6 +99,24 @@ public class AiIntegrationService {
                                                               // Çünkü görsel işleme uzun sürer. Java "ben işi AI'ya verdim, takip numaran bu" der
     }
 
+
+    public Mono<Map<String, Object>> getAiExtractionStatus(String taskId) {
+        log.info("Python AI: Task durumu ve sonuçları sorgulanıyor... TaskID: {}", taskId);
+        
+        // adreslerde " _ " kullanılmaz kesinlikle hata verecektir.
+        // Config krizinden kaçmak için direkt WebClient yaratıyoruz
+        WebClient directClient = WebClient.create("http://python-ai-api:8000");
+
+        return directClient.get()
+                .uri("/api/v1/vision/status/{taskId}", taskId)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .map(response -> {
+                    // Python'dan gelen ham cevabı Map olarak alıyoruz
+                    return response;
+                });
+    }
+
     // AI'dan uygunsuz içerik (uygunsuz içerik / NSFW) taraması yapma kısmıdır.
     public Mono<Boolean> checkContentModerationAsync(String imageUrl) {
         log.info("AI İçerik Denetimi başlatıldı. URL: {}", imageUrl);

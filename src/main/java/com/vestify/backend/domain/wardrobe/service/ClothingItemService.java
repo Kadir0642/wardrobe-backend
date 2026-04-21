@@ -7,11 +7,16 @@ import com.vestify.backend.domain.wardrobe.enums.ItemCondition;
 import com.vestify.backend.domain.wardrobe.enums.ItemSeason;
 import com.vestify.backend.domain.wardrobe.enums.ItemStatus;
 import com.vestify.backend.domain.wardrobe.repository.ClothingItemRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 // Bu servis, uygulamanın "Dijital Gardırop" yöneticisidir.
 // Kıyafetlerin sisteme dahil edilmesi, listelenmesi ve "silinmesi" gibi kritik işlemleri yönetir.
@@ -56,4 +61,23 @@ public class ClothingItemService {
 
         return clothingItemRepository.filterUserWardrobe(userId, category, subCategory, season, color, size, condition, pageable);
     }
+
+    // ClothingItemService.java içine eklenecek:
+    @Transactional
+    public List<ClothingItem> saveAiGeneratedItems(Long userId, List<Map<String, Object>> aiItems) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+
+        List<ClothingItem> itemsToSave = aiItems.stream().map(data -> {
+            return ClothingItem.builder()
+                    .user(user)
+                    .imageUrl((String) data.get("url"))
+                    .name("AI Tarafından Ayıklandı")
+                    .category("UNKNOWN") // İleride etiketlerden (tags) çekebiliriz
+                    .build();
+        }).collect(Collectors.toList());
+
+        return clothingItemRepository.saveAll(itemsToSave);
+    }
+    
 }

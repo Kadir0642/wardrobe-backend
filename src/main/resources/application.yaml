@@ -20,6 +20,10 @@ spring:
     show-sql: true # Arka planda calısan (SELECT, INSERT, UPDATE)  SQL sorgularini konsolda görmemizi saglar
     properties:
       hibernate:
+        jdbc:
+          batch_size: 20 # Aynı anda 20 kaydı tek pakette gönder
+        order_inserts: true # Insert komutlarını optimize et
+        order_updates: true # Update komutlarını optimize et
         dialect: org.hibernate.dialect.PostgreSQLDialect # Hibernate'e sorguları oluştururken tam olarak PostgreSQL dilinde yaz.
         format_sql: true # SQL sorguları terminalde gösterir
     open-in-view: false

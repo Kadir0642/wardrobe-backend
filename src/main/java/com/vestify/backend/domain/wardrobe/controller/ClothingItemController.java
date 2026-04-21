@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 // Bu controller; görsel yükleme desteği, tip güvenliği olan
@@ -95,5 +96,32 @@ public class ClothingItemController {
             return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Görsel okunurken bir hata oluştu.")));
         }
+    }
+
+    // ClothingItemController.java içindeki status metodunu güncelliyoruz:
+    @GetMapping("/{userId}/ai-status/{taskId}")
+    public Mono<ResponseEntity<?>> getAiExtractionStatus(
+            @PathVariable Long userId,
+            @PathVariable String taskId) {
+
+        return aiIntegrationService.getAiExtractionStatus(taskId)
+                .flatMap(aiResponse -> {
+                    String status = (String) aiResponse.get("status");
+
+                    if ("SUCCESS".equals(status)) {
+                        // Eğer başarıyla bittiyse sonuçları al ve veritabanına kaydet!
+                        List<Map<String, Object>> items = (List<Map<String, Object>>) aiResponse.get("items");
+                        List<ClothingItem> savedItems = clothingItemService.saveAiGeneratedItems(userId, items);
+
+                        return Mono.just(ResponseEntity.ok(Map.of(
+                                "status", "COMPLETED",
+                                "message", savedItems.size() + " adet kıyafet gardırobuna eklendi!",
+                                "items", savedItems
+                        )));
+                    }
+
+                    // Hala işleniyorsa veya hata varsa durumu dön
+                    return Mono.just(ResponseEntity.ok(aiResponse));
+                });
     }
 }
