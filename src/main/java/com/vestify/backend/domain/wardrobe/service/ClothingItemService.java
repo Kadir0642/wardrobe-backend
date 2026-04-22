@@ -74,6 +74,7 @@ public class ClothingItemService {
                     .imageUrl((String) data.get("url"))
                     .name("AI Tarafından Ayıklandı")
                     .category("UNKNOWN") // İleride etiketlerden (tags) çekebiliriz
+                    .moderationStatus(com.vestify.backend.domain.wardrobe.enums.ModerationStatus.APPROVED)
                     .build();
         }).collect(Collectors.toList());
 
