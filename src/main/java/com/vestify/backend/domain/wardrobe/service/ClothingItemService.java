@@ -67,45 +67,42 @@ public class ClothingItemService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
 
-        // Arka planı silinen kıyafetlerin CLIP tarafından özellikleri etiketleniyor ve  bunları supabase veritabanımıza kaydediyoruz.
-        List<ClothingItem> itemsToSave = aiItems.stream().map(data -> {
+        return aiItems.stream().map(data -> {
             Map<String, String> tags = (Map<String, String>) data.get("tags");
 
+            // AI'dan gelen verileri hazırla
             String category = (tags != null && tags.containsKey("category")) ? tags.get("category") : "UNKNOWN";
             String color = (tags != null && tags.containsKey("color")) ? tags.get("color") : "Belirtilmedi";
             String subCategory = (tags != null && tags.containsKey("sub_category")) ? tags.get("sub_category") : "Belirtilmedi";
 
-            // String metni ItemSeason Enum'una güvenli bir şekilde çeviren zırh
-            ItemSeason parsedSeason = null; // Eğer null kabul etmiyorsa kendi default değerini yaz (Örn: ItemSeason.UNKNOWN)
+            // Mevsim Dönüşümü (Enum Zırhı)
+            ItemSeason parsedSeason = null;
             try {
                 if (tags != null && tags.containsKey("season")) {
-                    // Gelen metni BÜYÜK HARFE çevir (summer -> SUMMER) ve Enum ile eşleştir
                     parsedSeason = ItemSeason.valueOf(tags.get("season").toUpperCase());
                 }
-            } catch (IllegalArgumentException e) {
-                // Eğer AI senin Enum listende olmayan bir mevsim uydurursa sistem çökmez, null (veya varsayılan) atanır.
-                System.out.println("Eşleşmeyen mevsim değeri atlandı: " + tags.get("season"));
+            } catch (Exception e) {
+                // Hatalı mevsim gelirse null kalsın veya default bir enum ata
             }
 
+            // 🚀 HER ŞEYİN TAMAMLANDIĞI O MEŞHUR BUILDER:
             return ClothingItem.builder()
-                    .user(user)
-                    .imageUrl((String) data.get("url"))
-                    .name("AI Ayıklaması")
+                    .user(user)                                     // Zorunlu (Nullable=false)
+                    .name("AI Ayıklaması")                          // Zorunlu (Nullable=false)
+                    .imageUrl((String) data.get("url"))             // Zorunlu (Nullable=false)
                     .category(category)
+                    .subCategory(subCategory)
                     .color(color)
                     .season(parsedSeason)
-                    .subCategory(subCategory)
-                    .moderationStatus(com.vestify.backend.domain.wardrobe.enums.ModerationStatus.APPROVED)
-                    .status(com.vestify.backend.domain.wardrobe.enums.ItemStatus.WARDROBE) // ÖRNEK! Sende adı neyse onu yaz
-                    .isFavorite(false) // Boolean'lar genelde DB'de NOT NULL olur
-                    .isSharable(false)
-                    .wearCount(0)
-                    // Eğer itemCondition veya formality gibi alanlar zorunluysa onlara da enum veya null olmayan değer ata!
-
+                    .status(com.vestify.backend.domain.wardrobe.enums.ItemStatus.WARDROBE) // Builder default'u görmez, elinle vermelisin
+                    .wearCount(0)                                   // Builder null yollamasın diye 0 setliyoruz
+                    .isSharable(false)                              // Builder null yollamasın diye false
+                    .isFavorite(false)                              // Builder null yollamasın diye false
+                    .moderationStatus(com.vestify.backend.domain.wardrobe.enums.ModerationStatus.APPROVED) // Zorunlu (Nullable=false)
                     .build();
         }).collect(Collectors.toList());
 
-        return clothingItemRepository.saveAll(itemsToSave);
+        // Not: clothingItemRepository.saveAll(itemsToSave) işlemini Controller'dan dönen savedItems ile Controller katmanında veya burada yapabilirsin.
     }
     
 }
