@@ -26,6 +26,9 @@ spring:
     show-sql: true # Arka planda calısan (SELECT, INSERT, UPDATE)  SQL sorgularini konsolda görmemizi saglar
     properties:
       hibernate:
+        connection:
+          provider_disables_autocommit: true # gereksiz komutları kapat
+        prepare_sql: false       
         jdbc:
           batch_size: 20 # Aynı anda 20 kaydı tek pakette gönder
         order_inserts: true # Insert komutlarını optimize et

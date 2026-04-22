@@ -62,8 +62,7 @@ public class ClothingItemService {
         return clothingItemRepository.filterUserWardrobe(userId, category, subCategory, season, color, size, condition, pageable);
     }
 
-    // ClothingItemService.java içine eklenecek:
-    @Transactional
+
     public List<ClothingItem> saveAiGeneratedItems(Long userId, List<Map<String, Object>> aiItems) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
@@ -76,7 +75,7 @@ public class ClothingItemService {
             String color = (tags != null && tags.containsKey("color")) ? tags.get("color") : "Belirtilmedi";
             String subCategory = (tags != null && tags.containsKey("sub_category")) ? tags.get("sub_category") : "Belirtilmedi";
 
-            // 🚀 ÇÖZÜM: String metni ItemSeason Enum'una güvenli bir şekilde çeviren zırh
+            // String metni ItemSeason Enum'una güvenli bir şekilde çeviren zırh
             ItemSeason parsedSeason = null; // Eğer null kabul etmiyorsa kendi default değerini yaz (Örn: ItemSeason.UNKNOWN)
             try {
                 if (tags != null && tags.containsKey("season")) {
