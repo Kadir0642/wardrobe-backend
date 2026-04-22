@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 // Bu controller; görsel yükleme desteği, tip güvenliği olan
 // filtreleme ve yüksek performanslı sayfalama yapısıyla projenin en sağlam parçalarından biri
@@ -108,17 +109,23 @@ public class ClothingItemController {
                 .flatMap(aiResponse -> {
                     String status = (String) aiResponse.get("status");
 
-                    if ("SUCCESS".equals(status)) {
-                        // Eğer başarıyla bittiyse sonuçları al ve veritabanına kaydet!
-                        List<Map<String, Object>> items = (List<Map<String, Object>>) aiResponse.get("items");
-                        List<ClothingItem> savedItems = clothingItemService.saveAiGeneratedItems(userId, items);
-
-                        return Mono.just(ResponseEntity.ok(Map.of(
-                                "status", "COMPLETED",
-                                "message", savedItems.size() + " adet kıyafet gardırobuna eklendi!",
-                                "items", savedItems
-                        )));
-                    }
+if ("SUCCESS".equals(status)) {
+                    List<Map<String, Object>> items = (List<Map<String, Object>>) aiResponse.get("items");
+                    
+                    // Kıyafetler veritabanına kaydediliyor (Bu kısım zaten çalışıyor!)
+                    List<ClothingItem> savedItems = clothingItemService.saveAiGeneratedItems(userId, items);
+                    
+                    // 🚀 KESİN ÇÖZÜM: JSON hatasını engellemek için tüm nesneyi değil, sadece Cloudinary URL'lerini dönüyoruz!
+                    List<String> savedUrls = savedItems.stream()
+                            .map(ClothingItem::getImageUrl)
+                            .collect(Collectors.toList());
+                    
+                    return Mono.just(ResponseEntity.ok(Map.of(
+                            "status", "COMPLETED",
+                            "message", savedItems.size() + " adet kıyafet gardırobuna başarıyla eklendi!",
+                            "saved_urls", savedUrls
+                    )));
+                }
 
                     // Hala işleniyorsa veya hata varsa durumu dön
                     return Mono.just(ResponseEntity.ok(aiResponse));
