@@ -62,7 +62,7 @@ public class ClothingItemService {
         return clothingItemRepository.filterUserWardrobe(userId, category, subCategory, season, color, size, condition, pageable);
     }
 
-
+    @Transactional
     public List<ClothingItem> saveAiGeneratedItems(Long userId, List<Map<String, Object>> aiItems) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
@@ -93,9 +93,15 @@ public class ClothingItemService {
                     .name("AI Ayıklaması")
                     .category(category)
                     .color(color)
-                    .season(parsedSeason) // <-- Artık String değil, güvenli ItemSeason nesnesini veriyoruz!
+                    .season(parsedSeason)
                     .subCategory(subCategory)
                     .moderationStatus(com.vestify.backend.domain.wardrobe.enums.ModerationStatus.APPROVED)
+                    .status(com.vestify.backend.domain.wardrobe.enums.ItemStatus.WARDROBE) // ÖRNEK! Sende adı neyse onu yaz
+                    .isFavorite(false) // Boolean'lar genelde DB'de NOT NULL olur
+                    .isSharable(false)
+                    .wearCount(0)
+                    // Eğer itemCondition veya formality gibi alanlar zorunluysa onlara da enum veya null olmayan değer ata!
+
                     .build();
         }).collect(Collectors.toList());
 
