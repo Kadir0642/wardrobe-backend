@@ -68,12 +68,34 @@ public class ClothingItemService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
 
+        // Arka planı silinen kıyafetlerin CLIP tarafından özellikleri etiketleniyor ve  bunları supabase veritabanımıza kaydediyoruz.
         List<ClothingItem> itemsToSave = aiItems.stream().map(data -> {
+            Map<String, String> tags = (Map<String, String>) data.get("tags");
+
+            String category = (tags != null && tags.containsKey("category")) ? tags.get("category") : "UNKNOWN";
+            String color = (tags != null && tags.containsKey("color")) ? tags.get("color") : "Belirtilmedi";
+            String subCategory = (tags != null && tags.containsKey("sub_category")) ? tags.get("sub_category") : "Belirtilmedi";
+
+            // 🚀 ÇÖZÜM: String metni ItemSeason Enum'una güvenli bir şekilde çeviren zırh
+            ItemSeason parsedSeason = null; // Eğer null kabul etmiyorsa kendi default değerini yaz (Örn: ItemSeason.UNKNOWN)
+            try {
+                if (tags != null && tags.containsKey("season")) {
+                    // Gelen metni BÜYÜK HARFE çevir (summer -> SUMMER) ve Enum ile eşleştir
+                    parsedSeason = ItemSeason.valueOf(tags.get("season").toUpperCase());
+                }
+            } catch (IllegalArgumentException e) {
+                // Eğer AI senin Enum listende olmayan bir mevsim uydurursa sistem çökmez, null (veya varsayılan) atanır.
+                System.out.println("Eşleşmeyen mevsim değeri atlandı: " + tags.get("season"));
+            }
+
             return ClothingItem.builder()
                     .user(user)
                     .imageUrl((String) data.get("url"))
-                    .name("AI Tarafından Ayıklandı")
-                    .category("UNKNOWN") // İleride etiketlerden (tags) çekebiliriz
+                    .name("AI Ayıklaması")
+                    .category(category)
+                    .color(color)
+                    .season(parsedSeason) // <-- Artık String değil, güvenli ItemSeason nesnesini veriyoruz!
+                    .subCategory(subCategory)
                     .moderationStatus(com.vestify.backend.domain.wardrobe.enums.ModerationStatus.APPROVED)
                     .build();
         }).collect(Collectors.toList());
