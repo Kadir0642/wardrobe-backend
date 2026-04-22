@@ -12,6 +12,12 @@ spring:
     username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver  # Çevirmen-> Java kodlarının PostgreSQL anlayacağı dile dönüştürülmesini sağlar
+    #Supabase'i boğmamak için bağlantı sınırları koyuyoruz
+    hikari:
+      maximum-pool-size: 3   # Aynı anda en fazla 3 bağlantı aç
+      minimum-idle: 1        # Boştayken sadece 1 bağlantı açık kalsın
+      connection-timeout: 20000 # Bağlanamazsa 20 saniye bekle
+
 
   # Hibernate / JPA Ayarlari (Tablolari otomatik olusturacak kisim)
   jpa:
