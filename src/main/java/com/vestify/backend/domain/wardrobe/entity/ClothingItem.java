@@ -28,7 +28,7 @@ public class ClothingItem {
     // Performas farkları yaratırlar | Sadece ihtiyac oldugunda kullanıcı verisini getirir, performansi arttirir
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable=false) // "Clothing_items" tablosunda "user_id" değişkenin ForeignKey (FK) tutulacağını belirtir. | Veritabanına "Git ve bu FK sütununu oluştur" emridir.
-    // @JsonIgnore  Dışarıya JSON gönderirken kullanıcı verisini sakla | userID,password bunları paketlerken gereksiz bir yükün altına giriyordu. Paketlemediği için artık sistem daha hızlı çalışıyor
+    @JsonIgnore  // Dışarıya JSON gönderirken kullanıcı verisini sakla | userID,password bunları paketlerken gereksiz bir yükün altına giriyordu. Paketlemediği için artık sistem daha hızlı çalışıyor
     private User user;
 
     @Column(nullable=false)
