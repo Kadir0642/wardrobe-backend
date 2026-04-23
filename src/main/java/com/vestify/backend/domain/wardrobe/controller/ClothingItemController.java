@@ -131,4 +131,25 @@ public class ClothingItemController {
         // PENDING (Beklemede) durumu
         return ResponseEntity.ok(aiResponse);
     }
+
+
+    // 🚀 1. GÜNCELLEME KAPISI (React Native'deki PUT isteğini karşılar)
+    @PutMapping("/{itemId}")
+    public ResponseEntity<ClothingItem> updateClothingItem(
+            @PathVariable Long itemId,
+            @RequestBody ClothingItem itemData) {
+            
+        ClothingItem updatedItem = clothingItemService.updateClothingItem(itemId, itemData);
+        return ResponseEntity.ok(updatedItem);
+    }
+
+    // 🚀 2. SİLME KAPISI (React Native'deki DELETE isteğini karşılar)
+    @DeleteMapping("/{itemId}")
+    public ResponseEntity<Void> deleteItem(@PathVariable Long itemId) {
+        // Senin servisteki harika Soft Delete metodunu çağırıyoruz
+        clothingItemService.deleteClothingItem(itemId);
+        // 204 No Content (İşlem başarılı, dönülecek veri yok) mesajı yollar
+        return ResponseEntity.noContent().build(); 
+    }
+
 }

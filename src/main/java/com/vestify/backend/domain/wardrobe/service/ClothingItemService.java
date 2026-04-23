@@ -55,6 +55,26 @@ public class ClothingItemService {
         log.info("Kıyafet Soft Delete ile silindi. ID: {}", itemId);
     }
 
+    // MEVCUT KODLARIN ARASINA EKLENECEK
+    public ClothingItem updateClothingItem(Long itemId, ClothingItem updatedData) {
+        // 1. Veritabanından eski kıyafeti bul
+        ClothingItem existingItem = clothingItemRepository.findById(itemId)
+                .orElseThrow(() -> new RuntimeException("Güncellenecek kıyafet bulunamadı!"));
+
+        // 2. Sadece mobilden gelen dolu verileri eski kıyafetin üzerine yaz
+        if (updatedData.getName() != null) existingItem.setName(updatedData.getName());
+        if (updatedData.getBrand() != null) existingItem.setBrand(updatedData.getBrand());
+        if (updatedData.getCategory() != null) existingItem.setCategory(updatedData.getCategory());
+        if (updatedData.getSubCategory() != null) existingItem.setSubCategory(updatedData.getSubCategory());
+        if (updatedData.getColor() != null) existingItem.setColor(updatedData.getColor());
+        if (updatedData.getSize() != null) existingItem.setSize(updatedData.getSize());
+        if (updatedData.getSeason() != null) existingItem.setSeason(updatedData.getSeason());
+        
+        // 3. Güncellenmiş haliyle kaydet
+        log.info("Kıyafet güncellendi. ID: {}", itemId);
+        return clothingItemRepository.save(existingItem);
+    }
+
     // ENUM DÜZELTMELERİ YAPILMIŞ AKILLI FİLTRE
     public Page<ClothingItem> filterClothes(Long userId, String category, String subCategory, String seasonStr, String color, String size, String conditionStr, Pageable pageable) {
         ItemSeason season = (seasonStr != null) ? ItemSeason.valueOf(seasonStr.toUpperCase()) : null;
