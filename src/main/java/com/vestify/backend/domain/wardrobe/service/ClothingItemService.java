@@ -63,7 +63,7 @@ public class ClothingItemService {
         return clothingItemRepository.filterUserWardrobe(userId, category, subCategory, season, color, size, condition, pageable);
     }
 
-    @Transactional // Bu kesinlikle kalmalı
+    @Transactional 
     public List<ClothingItem> saveAiGeneratedItems(Long userId, List<Map<String, Object>> aiItems) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
@@ -73,45 +73,36 @@ public class ClothingItemService {
             Map<String, String> tags = (Map<String, String>) data.get("tags");
 
             // 1. Python'dan Gelenleri Doğru Yakala (Eğer tag gelmezse UNKNOWN veya Belirtilmedi bas)
-            String aiCategory = (tags != null && tags.containsKey("category")) ? tags.get("category") : "UNKNOWN";
-            String aiSubCategory = (tags != null && tags.containsKey("sub_category")) ? tags.get("sub_category") : "UNKNOWN";
-            String aiColor = (tags != null && tags.containsKey("color")) ? tags.get("color") : "Belirtilmedi";
-            String aiFormality = (tags != null && tags.containsKey("formality")) ? tags.get("formality") : "UNKNOWN";
+            String category = (tags != null && tags.containsKey("category")) ? tags.get("category") : "UNKNOWN";
+            String subCategory = (tags != null && tags.containsKey("sub_category")) ? tags.get("sub_category") : "UNKNOWN";
+            String color = (tags != null && tags.containsKey("color")) ? tags.get("color") : "UNKNOWN";
+            String formality = (tags != null && tags.containsKey("formality")) ? tags.get("formality") : "UNKNOWN";
 
-            // 2. Mevsimi (Season) Enum'a Çevirme Zırhı
+            // 2. Mevsimi (Season) Enum'a Çevirme
             ItemSeason parsedSeason = null;
             try {
                 if (tags != null && tags.containsKey("season")) {
                     parsedSeason = ItemSeason.valueOf(tags.get("season").toUpperCase());
                 }
-            } catch (Exception e) {
-                log.warn("AI tarafından gönderilen geçersiz mevsim değeri atlandı: {}", tags.get("season"));
-            }
+            } catch (Exception e) {}
 
             // 3. Veritabanına Yazılacak (Builder) Nesnesi
             return ClothingItem.builder()
                     .user(user)
-                    .name("AI Ayıklaması") // Mobilde kullanıcı bunu sonradan değiştirebilir
+                    .name("AI Ayıklaması") // Mobilde kullanıcı burayı sonradan değiştirebilir.
                     .imageUrl((String) data.get("url"))
-
-                    // Python'dan Gelen Etiketler
-                    .category(aiCategory)
-                    .subCategory(aiSubCategory)
-                    .color(aiColor)
-                    .formality(aiFormality)
+                    .category(category)
+                    .subCategory(subCategory)
+                    .color(color)
+                    .formality(formality)
                     .season(parsedSeason)
-
-                    // Supabase'in boş bırakılamaz (Not Null) dediği zorunlu alanlar
-                    .status(ItemStatus.WARDROBE)
+                    .status(com.vestify.backend.domain.wardrobe.enums.ItemStatus.WARDROBE)
                     .wearCount(0)
                     .isSharable(false)
                     .isFavorite(false)
-                    .moderationStatus(ModerationStatus.APPROVED)
-
-                    // Matematiksel metotların hata vermemesi için güvenli değerler (Opsiyonel ama iyi pratik)
+                    .moderationStatus(com.vestify.backend.domain.wardrobe.enums.ModerationStatus.APPROVED)
                     .purchasePrice(0.0)
                     .loveFactor(0)
-
                     .build();
         }).collect(Collectors.toList());
 

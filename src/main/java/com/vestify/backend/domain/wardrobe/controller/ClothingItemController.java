@@ -99,29 +99,28 @@ public class ClothingItemController {
         }
     }
 
-    // Mono'yu kaldırdık, standart ResponseEntity yaptık
+
+
     @GetMapping("/{userId}/ai-status/{taskId}")
     public ResponseEntity<?> getAiExtractionStatus(
             @PathVariable Long userId,
             @PathVariable String taskId) {
 
+
+        // (Hibernate ile çakışmayı önlemek için)
         // .block() kullanarak asenkron kuryeyi ana şeride kilitliyoruz.
         // Böylece Hibernate (Veritabanı) kafa karışıklığı yaşamıyor!
         Map<String, Object> aiResponse = (Map<String, Object>) aiIntegrationService.getAiExtractionStatus(taskId).block();
 
-        String status = (String) aiResponse.get("status");
-
-        if ("SUCCESS".equals(status)) {
+        if (aiResponse != null && "SUCCESS".equals(aiResponse.get("status"))) {
             List<Map<String, Object>> items = (List<Map<String, Object>>) aiResponse.get("items");
 
-            // Veritabanına kayıt işlemi (Zaten mükemmel çalışıyor!)
             List<ClothingItem> savedItems = clothingItemService.saveAiGeneratedItems(userId, items);
 
             List<String> savedUrls = savedItems.stream()
                     .map(ClothingItem::getImageUrl)
                     .collect(Collectors.toList());
 
-            // Artık 400 değil, yemyeşil bir 200 OK dönecek
             return ResponseEntity.ok(Map.of(
                     "status", "COMPLETED",
                     "message", savedItems.size() + " adet kıyafet gardırobuna başarıyla eklendi!",
@@ -129,7 +128,7 @@ public class ClothingItemController {
             ));
         }
 
-        // Hala işleniyorsa (PENDING) durumu dön
+        // PENDING (Beklemede) durumu
         return ResponseEntity.ok(aiResponse);
     }
 }
