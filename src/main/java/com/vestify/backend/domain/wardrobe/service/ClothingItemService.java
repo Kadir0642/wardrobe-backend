@@ -6,6 +6,7 @@ import com.vestify.backend.domain.wardrobe.entity.ClothingItem;
 import com.vestify.backend.domain.wardrobe.enums.ItemCondition;
 import com.vestify.backend.domain.wardrobe.enums.ItemSeason;
 import com.vestify.backend.domain.wardrobe.enums.ItemStatus;
+import com.vestify.backend.domain.wardrobe.enums.ModerationStatus;
 import com.vestify.backend.domain.wardrobe.repository.ClothingItemRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -62,47 +63,60 @@ public class ClothingItemService {
         return clothingItemRepository.filterUserWardrobe(userId, category, subCategory, season, color, size, condition, pageable);
     }
 
-    @Transactional
+    @Transactional // Bu kesinlikle kalmalı
     public List<ClothingItem> saveAiGeneratedItems(Long userId, List<Map<String, Object>> aiItems) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
 
-        return aiItems.stream().map(data -> {
+        List<ClothingItem> itemsToSave = aiItems.stream().map(data -> {
+            // Python'dan (AI) gelen 'tags' sözlüğünü al
             Map<String, String> tags = (Map<String, String>) data.get("tags");
 
-            // AI'dan gelen verileri hazırla
-            String category = (tags != null && tags.containsKey("category")) ? tags.get("category") : "UNKNOWN";
-            String color = (tags != null && tags.containsKey("color")) ? tags.get("color") : "Belirtilmedi";
-            String subCategory = (tags != null && tags.containsKey("sub_category")) ? tags.get("sub_category") : "Belirtilmedi";
+            // 1. Python'dan Gelenleri Doğru Yakala (Eğer tag gelmezse UNKNOWN veya Belirtilmedi bas)
+            String aiCategory = (tags != null && tags.containsKey("category")) ? tags.get("category") : "UNKNOWN";
+            String aiSubCategory = (tags != null && tags.containsKey("sub_category")) ? tags.get("sub_category") : "UNKNOWN";
+            String aiColor = (tags != null && tags.containsKey("color")) ? tags.get("color") : "Belirtilmedi";
+            String aiFormality = (tags != null && tags.containsKey("formality")) ? tags.get("formality") : "UNKNOWN";
 
-            // Mevsim Dönüşümü (Enum Zırhı)
+            // 2. Mevsimi (Season) Enum'a Çevirme Zırhı
             ItemSeason parsedSeason = null;
             try {
                 if (tags != null && tags.containsKey("season")) {
                     parsedSeason = ItemSeason.valueOf(tags.get("season").toUpperCase());
                 }
             } catch (Exception e) {
-                // Hatalı mevsim gelirse null kalsın veya default bir enum ata
+                log.warn("AI tarafından gönderilen geçersiz mevsim değeri atlandı: {}", tags.get("season"));
             }
 
-            // 🚀 HER ŞEYİN TAMAMLANDIĞI O MEŞHUR BUILDER:
+            // 3. Veritabanına Yazılacak (Builder) Nesnesi
             return ClothingItem.builder()
-                    .user(user)                                     // Zorunlu (Nullable=false)
-                    .name("AI Ayıklaması")                          // Zorunlu (Nullable=false)
-                    .imageUrl((String) data.get("url"))             // Zorunlu (Nullable=false)
-                    .category(category)
-                    .subCategory(subCategory)
-                    .color(color)
+                    .user(user)
+                    .name("AI Ayıklaması") // Mobilde kullanıcı bunu sonradan değiştirebilir
+                    .imageUrl((String) data.get("url"))
+
+                    // Python'dan Gelen Etiketler
+                    .category(aiCategory)
+                    .subCategory(aiSubCategory)
+                    .color(aiColor)
+                    .formality(aiFormality)
                     .season(parsedSeason)
-                    .status(com.vestify.backend.domain.wardrobe.enums.ItemStatus.WARDROBE) // Builder default'u görmez, elinle vermelisin
-                    .wearCount(0)                                   // Builder null yollamasın diye 0 setliyoruz
-                    .isSharable(false)                              // Builder null yollamasın diye false
-                    .isFavorite(false)                              // Builder null yollamasın diye false
-                    .moderationStatus(com.vestify.backend.domain.wardrobe.enums.ModerationStatus.APPROVED) // Zorunlu (Nullable=false)
+
+                    // Supabase'in boş bırakılamaz (Not Null) dediği zorunlu alanlar
+                    .status(ItemStatus.WARDROBE)
+                    .wearCount(0)
+                    .isSharable(false)
+                    .isFavorite(false)
+                    .moderationStatus(ModerationStatus.APPROVED)
+
+                    // Matematiksel metotların hata vermemesi için güvenli değerler (Opsiyonel ama iyi pratik)
+                    .purchasePrice(0.0)
+                    .loveFactor(0)
+
                     .build();
         }).collect(Collectors.toList());
 
-        // Not: clothingItemRepository.saveAll(itemsToSave) işlemini Controller'dan dönen savedItems ile Controller katmanında veya burada yapabilirsin.
+        // 4. Oluşturulan listeyi veritabanına TEK SEFERDE kaydet
+        return clothingItemRepository.saveAll(itemsToSave);
     }
     
 }
