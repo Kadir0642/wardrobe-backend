@@ -99,36 +99,37 @@ public class ClothingItemController {
         }
     }
 
-    // ClothingItemController.java içindeki status metodunu güncelliyoruz:
+    // Mono'yu kaldırdık, standart ResponseEntity yaptık
     @GetMapping("/{userId}/ai-status/{taskId}")
-    public Mono<ResponseEntity<?>> getAiExtractionStatus(
+    public ResponseEntity<?> getAiExtractionStatus(
             @PathVariable Long userId,
             @PathVariable String taskId) {
 
-        return aiIntegrationService.getAiExtractionStatus(taskId)
-                .flatMap(aiResponse -> {
-                    String status = (String) aiResponse.get("status");
+        // .block() kullanarak asenkron kuryeyi ana şeride kilitliyoruz.
+        // Böylece Hibernate (Veritabanı) kafa karışıklığı yaşamıyor!
+        Map<String, Object> aiResponse = (Map<String, Object>) aiIntegrationService.getAiExtractionStatus(taskId).block();
 
-if ("SUCCESS".equals(status)) {
-                    List<Map<String, Object>> items = (List<Map<String, Object>>) aiResponse.get("items");
-                    
-                    // Kıyafetler veritabanına kaydediliyor (Bu kısım zaten çalışıyor!)
-                    List<ClothingItem> savedItems = clothingItemService.saveAiGeneratedItems(userId, items);
-                    
-                    // 🚀 KESİN ÇÖZÜM: JSON hatasını engellemek için tüm nesneyi değil, sadece Cloudinary URL'lerini dönüyoruz!
-                    List<String> savedUrls = savedItems.stream()
-                            .map(ClothingItem::getImageUrl)
-                            .collect(Collectors.toList());
-                    
-                    return Mono.just(ResponseEntity.ok(Map.of(
-                            "status", "COMPLETED",
-                            "message", savedItems.size() + " adet kıyafet gardırobuna başarıyla eklendi!",
-                            "saved_urls", savedUrls
-                    )));
-                }
+        String status = (String) aiResponse.get("status");
 
-                    // Hala işleniyorsa veya hata varsa durumu dön
-                    return Mono.just(ResponseEntity.ok(aiResponse));
-                });
+        if ("SUCCESS".equals(status)) {
+            List<Map<String, Object>> items = (List<Map<String, Object>>) aiResponse.get("items");
+
+            // Veritabanına kayıt işlemi (Zaten mükemmel çalışıyor!)
+            List<ClothingItem> savedItems = clothingItemService.saveAiGeneratedItems(userId, items);
+
+            List<String> savedUrls = savedItems.stream()
+                    .map(ClothingItem::getImageUrl)
+                    .collect(Collectors.toList());
+
+            // Artık 400 değil, yemyeşil bir 200 OK dönecek
+            return ResponseEntity.ok(Map.of(
+                    "status", "COMPLETED",
+                    "message", savedItems.size() + " adet kıyafet gardırobuna başarıyla eklendi!",
+                    "saved_urls", savedUrls
+            ));
+        }
+
+        // Hala işleniyorsa (PENDING) durumu dön
+        return ResponseEntity.ok(aiResponse);
     }
 }
