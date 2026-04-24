@@ -14,7 +14,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 // Bu service, rastgele kıyafet seçmiyor; seçtiği kombinleri Python AI servisine onaylatana kadar (veya deneme sınırı dolana kadar) denemeye devam ediyor.
-
+// Kıyafetlerin özelliklerini sayısal dizilimlere (vektörlere) çevirip, bunların birbiriyle stil uyumunu tam olarak bahsettiğin o Kosinüs Benzerliği (Cosine Similarity) ile ölçen bir puanlama sistemimiz var.
 @Service
 @RequiredArgsConstructor
 @Slf4j
