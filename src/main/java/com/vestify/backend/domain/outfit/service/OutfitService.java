@@ -54,6 +54,7 @@ public class OutfitService {
                 .user(user)
                 .name(outfitName)
                 .clothingItems(itemsSet)
+                .moderationStatus(com.vestify.backend.domain.outfit.enums.ModerationStatus.APPROVED)
                 .build();
 
         log.info("Kullanıcı {} için yeni kombin kaydedildi: {}", userId, outfitName);

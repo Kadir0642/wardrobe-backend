@@ -28,6 +28,7 @@ public class Outfit {
     @JoinColumn(name="user_id", nullable=false)
     private User user;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "moderation_status", nullable = false)
     private ModerationStatus moderationStatus = ModerationStatus.PENDING;
