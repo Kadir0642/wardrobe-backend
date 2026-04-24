@@ -56,4 +56,18 @@ public class OutfitController {
         return ResponseEntity.ok(outfitService.getUserOutfits(userId, pageable));
     }
 
+    // Kombin İsmi Güncelleme
+    @PutMapping("/{id}")
+    public ResponseEntity<OutfitDto> updateOutfit(@PathVariable Long id, @RequestBody OutfitRequest request) {
+        Outfit updated = outfitService.updateOutfitName(id, request.getName());
+        return ResponseEntity.ok(outfitService.convertToDto(updated));
+    }
+
+    // Kombin Silme
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteOutfit(@PathVariable Long id) {
+        outfitService.deleteOutfit(id);
+        return ResponseEntity.noContent().build();
+    }
+
 }

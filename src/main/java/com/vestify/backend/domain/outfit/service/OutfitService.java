@@ -114,4 +114,20 @@ public class OutfitService {
                 .clothes(itemDtos)
                 .build();
     }
+
+    @Transactional  // Outfit adını değiştiriyoruz. 
+    public Outfit updateOutfitName(Long id, String newName) {
+        Outfit outfit = outfitRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("outfit not found!"));
+        outfit.setName(newName);
+        return outfitRepository.save(outfit);
+    }
+
+    @Transactional   // Kombin silme 
+    public void deleteOutfit(Long id) {
+        if (!outfitRepository.existsById(id)) {
+            throw new RuntimeException("outfit not found!");
+        }
+        outfitRepository.deleteById(id);
+    }
 }
