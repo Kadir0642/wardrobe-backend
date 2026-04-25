@@ -116,11 +116,16 @@ public class OutfitService {
     }
 
     @Transactional  // Outfit adını değiştiriyoruz. 
-    public Outfit updateOutfitName(Long id, String newName) {
+    public OutfitDto updateOutfitName(Long id, String newName) {
         Outfit outfit = outfitRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("outfit not found!"));
         outfit.setName(newName);
-        return outfitRepository.save(outfit);
+        Outfit updatedOutfit = outfitRepository.save(outfit);
+        // Veritabanı tüneli (Transaction) hala açıkken 
+        // kıyafetleri alıp DTO'ya çeviriyoruz!
+        return convertToDto(updatedOutfit);
+        
+
     }
 
     @Transactional   // Kombin silme 

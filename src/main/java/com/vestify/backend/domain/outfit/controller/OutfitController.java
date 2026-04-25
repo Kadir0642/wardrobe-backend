@@ -59,8 +59,9 @@ public class OutfitController {
     // Kombin İsmi Güncelleme
     @PutMapping("/{id}")
     public ResponseEntity<OutfitDto> updateOutfit(@PathVariable Long id, @RequestBody OutfitRequest request) {
-        Outfit updated = outfitService.updateOutfitName(id, request.getName());
-        return ResponseEntity.ok(outfitService.convertToDto(updated));
+        // Servis bize hazır çevrilmiş DTO paketi verecek.
+        OutfitDto responseDto = outfitService.updateOutfitName(id, request.getName());
+        return ResponseEntity.ok(responseDto);
     }
 
     // Kombin Silme
