@@ -38,9 +38,9 @@ public class VtonController {
         }
     }
 
-    // ====================================================================
-    // ESKİ (LEGACY): Doğrudan dosya yüklemeli senkron test ucu
-    // ====================================================================
+    // ======================================================================================
+    // ESKİ (LEGACY): Doğrudan dosya yüklemeli senkron test ucu  <--> Şuan bunu kullanmıyoruz.
+    // ======================================================================================
     @PostMapping("/try-on")
     public ResponseEntity<?> tryOnClothes(
             @RequestParam("person_image") MultipartFile personImage,
