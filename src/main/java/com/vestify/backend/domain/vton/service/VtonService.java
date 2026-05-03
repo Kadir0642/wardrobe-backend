@@ -16,12 +16,12 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 // teknik sistemlerde (veritabanı, yazılım, ağ) her veriye "dünyada sadece bir tane" olduğunu garanti eden dijital bir parmak izi atama yöntemidir.
-import java.util.UUID;
+import java.util.UUID; // UUID -> Universal Unique Identifier (Evrensel benzersiz tanımlayıcı)
 
 @Service
 public class VtonService {
 
-    // 🚀 DİKKAT: Java Docker içinde olduğu için dışarıdaki Windows'a (Python'a) bu adresle çıkar!
+    //  DİKKAT: Java Docker içinde olduğu için dışarıdaki Windows'a (Python'a) bu adresle çıkar!
     private final String PYTHON_API_URL = "http://host.docker.internal:8001/vton/try-on";
 
     @Autowired
