@@ -12,5 +12,5 @@ public class OutfitDto { // Kombin içindeki kıyafetlerin listesidir.
     private Long id;
     private String name;
     private String outfitImageUrl; // Ekledik: AR ile oluşturulan sonuç görseli buraya gelecek!
-    private Set<ClothingItemDto> clothes; // İçinde sadece temizlenmiş DTO kıyafetler var.
+    private Set<ClothingItemDto> clothes; // İçinde sadece temizlenmiş DTO kıyafetler var. | React tarafında veya farklı yer olsun fark etmez. Kombin kıyafetlerini clothes adında set liste ile yolluyoruz.
 }
