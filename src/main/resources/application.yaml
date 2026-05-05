@@ -34,3 +34,9 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect # Hibernate'e sorguları oluştururken tam olarak PostgreSQL dilinde yaz.
         format_sql: true # SQL sorguları terminalde gösterir
     open-in-view: false
+
+# VESTIFY AI SERVICES (FAL.AI)
+fal:
+  ai:
+    api-key: ${FAL_API}
+    endpoint: "https://fal.run/fal-ai/idm-vton" # IDM-VTON modelinin resmi adresi
