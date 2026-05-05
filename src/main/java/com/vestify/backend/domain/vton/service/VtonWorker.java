@@ -64,7 +64,7 @@ public class VtonWorker {
                     .bodyValue(requestBody)
                     .retrieve() // Cevabı getir
                     .bodyToMono(Map.class) // Gelen JSON'u Map'e dönüştür
-                    .timeout(Duration.ofSeconds(120)) // AI 120 saniyede cevap vermezse işlemi iptal et | ARTTIRDIK sebebi -> ilk işlemlerde GPU modeli yeni belleğe yükleme işlemleri 45-60 saniye sürer sonraki işlemeler oldukça hızlı sonuçlanır.
+                    .timeout(Duration.ofSeconds(165)) // AI 165 saniyede cevap vermezse işlemi iptal et | ARTTIRDIK sebebi -> ilk işlemlerde GPU modeli yeni belleğe yükleme işlemleri 45-60 saniye sürer sonraki işlemeler oldukça hızlı sonuçlanır.
                     .block(); // ⚠️ DİKKAT: Neden block() kullandığımızı aşağıda açıkladım!
 
             // WebClient tamamen asenkrondur. Eğer .block() yerine reaktif dünyanın kuralı olan .subscribe() kullansaydık, kod hiç beklemeden anında biterdi.
