@@ -1,5 +1,6 @@
 package com.vestify.backend.domain.vton.service;
 
+import org.springframework.web.reactive.function.client.WebClientResponseException; // 🚀 En üste bu import'u eklemeyi unutma!
 import com.vestify.backend.core.config.RabbitMQConfig;
 import com.vestify.backend.domain.vton.dto.VtonTaskMessage;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -41,6 +42,10 @@ public class VtonWorker {
         System.out.println("=====================================================");
         System.out.println("🚀 [FAL.AI WEBCLIENT WORKER] YENİ GÖREV ALINDI!");
         System.out.println("Task ID: " + taskId);
+
+        // 🚀 KONTROL: React Native'den linkler doğru isimle gelebilmiş mi? (null olmamalı!)
+        System.out.println("Kişi URL: " + message.getPersonImageUrl());
+        System.out.println("Kıyafet URL: " + message.getGarmentImageUrls());
 
         try {
             // 1. Fal.ai Paketini Hazırla  | burası sanırım kullanıcının isteğine göre giydirme yapacağımız alan seçeneklerle alakalı giyim şekli yaptırılabilir.
@@ -94,9 +99,14 @@ public class VtonWorker {
                 System.out.println("📸 Sonuç URL: " + resultImageUrl);
             }
 
+        } catch (WebClientResponseException e) {
+            // 🚀 YENİ: EĞER FAL.AI KIZARSA, BİZE TAM OLARAK NEDENİNİ SÖYLEYECEK!
+            System.err.println("🚨 Fal.ai API Hatası Kodu: " + e.getStatusCode());
+            System.err.println("🚨 Fal.ai Diyor ki: " + e.getResponseBodyAsString());
+            taskTracker.completeTask(taskId, "HATA");
         } catch (Exception e) {
-            System.err.println("🚨 WebClient Kritik Hata (Timeout veya API Çökmesi): " + e.getMessage());
-            taskTracker.completeTask(taskId, "HATA"); // Telefona hata fırlat
+            System.err.println("🚨 WebClient Genel Hata: " + e.getMessage());
+            taskTracker.completeTask(taskId, "HATA");
         }
         System.out.println("=====================================================");
     }
