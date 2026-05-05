@@ -55,7 +55,7 @@ public class VtonWorker {
             requestBody.put("category", "upper_body");
             requestBody.put("num_inference_steps", 30);
 
-            System.out.println("⏳ Fal.ai GPU'ları kıyafeti giydiriyor (Non-blocking istek atılıyor)...");
+            System.out.println("⏳ Fal.ai GPU'ları kıyafeti giydiriyor (Non-blocking istek atılıyor -> 120 saniyeye kadar sürebilir)...");
 
             // 2. WEBCLIENT İLE ASENKRON İSTEK (REACTIVE PROGRAMMING)
             Map response = webClient.post()
@@ -64,7 +64,7 @@ public class VtonWorker {
                     .bodyValue(requestBody)
                     .retrieve() // Cevabı getir
                     .bodyToMono(Map.class) // Gelen JSON'u Map'e dönüştür
-                    .timeout(Duration.ofSeconds(60)) // AI 60 saniyede cevap vermezse işlemi iptal et
+                    .timeout(Duration.ofSeconds(120)) // AI 120 saniyede cevap vermezse işlemi iptal et | ARTTIRDIK sebebi -> ilk işlemlerde GPU modeli yeni belleğe yükleme işlemleri 45-60 saniye sürer sonraki işlemeler oldukça hızlı sonuçlanır.
                     .block(); // ⚠️ DİKKAT: Neden block() kullandığımızı aşağıda açıkladım!
 
             // WebClient tamamen asenkrondur. Eğer .block() yerine reaktif dünyanın kuralı olan .subscribe() kullansaydık, kod hiç beklemeden anında biterdi.
