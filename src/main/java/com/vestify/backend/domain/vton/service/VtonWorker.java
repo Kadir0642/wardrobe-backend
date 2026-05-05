@@ -68,6 +68,19 @@ public class VtonWorker {
             // bu mesajı kuyrukta güvende tut" demek için burada block() kullanmak bir sektör standardıdır (Manuel Ack sistemi kurmadığımız sürece).
             // Yani WebClient'in gücünü kullanıyoruz ama mesajlarımızı da koruma altına alıyoruz.
 
+            // RabbitMQ'da Manuel Ack (Acknowledgement - Onaylama) Sistemi, bir tüketicinin (consumer - Java Spring Boot uygulamanız)
+            // kuyruktan aldığı bir mesajı başarılı bir şekilde işledikten sonra, RabbitMQ sunucusuna "bu mesajı başarıyla işledim,
+            // kuyruktan silebilirsin" bilgisini manuel olarak gönderdiği bir güven mekanizmasıdır.
+
+            //Bu sistem, mesajların işlenirken kaybolmasını önler ve veri tutarlılığını sağlar.
+            //Neden Manuel Ack Kullanmalıyız?
+            //Güvenilir İşleme: Otomatik Ack sisteminde mesaj tüketiciye ulaştığı anda kuyruktan silinir.
+            // Eğer tüketici mesajı işlerken hata verirse (crash, exception), mesaj kaybolur.
+            // Hata Yönetimi: Manuel Ack ile mesajın işlenmesi başarısız olursa, mesajı reddedip (Nack/Reject)
+            // tekrar kuyruğa girmesini (requeue) veya ölü mektup kuyruğuna (Dead Letter Exchange - DLX) yönlendirebilirsiniz.
+            //İşlem Kontrolü: Mesajın ne zaman "tamamlandı" sayılacağına uygulama karar verir
+
+
             // 3. BAŞARILI SONUCU İŞLE
             if (response != null && response.containsKey("image")) {
                 Map<String, Object> imageObj = (Map<String, Object>) response.get("image");
