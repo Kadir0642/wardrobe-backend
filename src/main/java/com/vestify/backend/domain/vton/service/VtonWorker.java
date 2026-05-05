@@ -24,9 +24,11 @@ public class VtonWorker {
     private String falAiApiKey;
 
     // 🚀 MİMARİ DOKUNUŞ: WebClient'ı performanslı çalışması için Constructor'da bir kez inşa ediyoruz (Build)
-    public VtonWorker(VtonTaskTracker taskTracker, WebClient.Builder webClientBuilder, @Value("${fal.ai.endpoint}") String falAiEndpoint) {
+    // 🚀 DÜZELTME: WebClient.Builder'ı Spring'den (parametre olarak) dilenmek yerine,
+    // WebClient.builder() diyerek statik olarak kendimiz yaratıyoruz! Yıkılmaz bir mimari.
+    public VtonWorker(VtonTaskTracker taskTracker, @Value("${fal.ai.endpoint}") String falAiEndpoint) {
         this.taskTracker = taskTracker;
-        this.webClient = webClientBuilder
+        this.webClient = WebClient.builder()
                 .baseUrl(falAiEndpoint)
                 .build();
     }
