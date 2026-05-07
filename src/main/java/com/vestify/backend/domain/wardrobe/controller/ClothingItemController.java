@@ -40,6 +40,10 @@ public class ClothingItemController {
             @RequestPart("image") MultipartFile image, // Kullanıcının telefonundan seçtiği ham görsel dosyasını (fotoğrafı) yakalar
             @RequestPart("data") ClothingItem itemData) { // Görselin yanındaki JSON verisini (kıyafetin adı, rengi vb.) yakalayıp otomatik olarak ClothingItem nesnesine çeviri
 
+        // Pythonda worker dosyası, resmi temizledikten sonra Cloudinary'ye yüklemeyi Python içinde yapıyor ve
+        // Java'ya sadece o üretilen linki JSON olarak ("url": "https://res.cloudinary...") geri döndürüyor!
+        // Java da sadece o gelen linki veritabanına kaydediyor.
+
         // Not: Gerçek senaryoda burada önce image'i Cloudinary'e yükleyip URL'sini itemData'ya set edeceğiz.
         ClothingItem savedItem = clothingItemService.addClothingItem(userId, itemData);
 

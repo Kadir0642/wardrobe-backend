@@ -1,5 +1,6 @@
 package com.vestify.backend.domain.vton.controller;
 
+import com.vestify.backend.core.service.CloudinaryService;
 import com.vestify.backend.domain.vton.dto.VtonTaskMessage;
 import com.vestify.backend.domain.vton.dto.VtonTaskRequest;
 import com.vestify.backend.domain.vton.service.VtonService;
@@ -8,7 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
 import java.util.Map; // 🚀 YENİ: JSON dönmek için eklendi
+
 
 @RestController
 @RequestMapping("/api/v1/vton")
@@ -67,19 +70,20 @@ public class VtonController {
         return ResponseEntity.ok(result);
     }
 
-    // ======================================================================================
-    // ESKİ (LEGACY): Doğrudan dosya yüklemeli senkron test ucu  <--> Şuan bunu kullanmıyoruz.
-    // ======================================================================================
-    @PostMapping("/try-on")
-    public ResponseEntity<?> tryOnClothes(
-            @RequestParam("person_image") MultipartFile personImage,
-            @RequestParam("garment_image") MultipartFile garmentImage) {
+    // ====================================================================
+    // 🚀 YENİ: Kullanıcının fotoğrafını Cloudinary'ye yükleme kapısı
+    // ====================================================================
+    // VtonController.java içinde:
+    @Autowired
+    private CloudinaryService cloudinaryService;
+
+    @PostMapping(value = "/upload-person", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, String>> uploadPersonImage(@RequestPart("image") MultipartFile image) {
         try {
-            String result = vtonService.requestVirtualTryOn(personImage, garmentImage);
-            return ResponseEntity.ok(result);
+            String uploadedUrl = cloudinaryService.uploadImage(image);
+            return ResponseEntity.ok(Map.of("url", uploadedUrl));
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().body("VTON Köprü Hatası: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(Map.of("error", "Görsel yüklenemedi: " + e.getMessage()));
         }
     }
 }

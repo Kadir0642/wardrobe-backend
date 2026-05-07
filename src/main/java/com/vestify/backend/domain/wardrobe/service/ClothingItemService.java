@@ -55,7 +55,7 @@ public class ClothingItemService {
         log.info("Kıyafet Soft Delete ile silindi. ID: {}", itemId);
     }
 
-    // MEVCUT KODLARIN ARASINA EKLENECEK
+
     public ClothingItem updateClothingItem(Long itemId, ClothingItem updatedData) {
         // 1. Veritabanından eski kıyafeti bul
         ClothingItem existingItem = clothingItemRepository.findById(itemId)
