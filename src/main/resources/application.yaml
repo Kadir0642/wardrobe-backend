@@ -3,8 +3,9 @@ spring:
     name: backend # Spring Boot uygulama adi
   servlet: # 413 Hata kodunun ve terminaldeki kırmızı yazıların tamamen yok olduğunu göreceksin. O 3 MB'lık fotoğraflar kapıdan rahatça geçecek, AI tarafından kesilecek ve veritabanına 50 KB'lık kuş gibi hafif WebP'ler olarak kaydedilecek!
     multipart:
+      enable: true
       max-file-size: 20MB
-      max-request-size: 20MB
+      max-request-size: 25MB
 
   # Veritabani Baglanti Ayarlari
   datasource:
@@ -40,3 +41,8 @@ fal:
   ai:
     api-key: ${FAL_API}
     endpoint: "https://fal.run/fal-ai/idm-vton" # IDM-VTON modelinin resmi adresi
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
