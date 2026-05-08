@@ -17,7 +17,7 @@ public class CloudinaryConfig {
 
     // 🚀 DÜZELTME: System.getenv yerine Spring'in @Value anotasyonunu kullanıyoruz.
     // Bu değerler application.yaml üzerinden güvenle gelecek.
-    @Value("${cloudinary.cloud-name")
+    @Value("${cloudinary.cloud-name}")
     private String cloudName;
 
     @Value("${cloudinary.api-key}")

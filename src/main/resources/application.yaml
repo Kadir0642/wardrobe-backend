@@ -3,7 +3,7 @@ spring:
     name: backend # Spring Boot uygulama adi
   servlet: # 413 Hata kodunun ve terminaldeki kırmızı yazıların tamamen yok olduğunu göreceksin. O 3 MB'lık fotoğraflar kapıdan rahatça geçecek, AI tarafından kesilecek ve veritabanına 50 KB'lık kuş gibi hafif WebP'ler olarak kaydedilecek!
     multipart:
-      enable: true
+      enabled: true
       max-file-size: 20MB
       max-request-size: 25MB
 
