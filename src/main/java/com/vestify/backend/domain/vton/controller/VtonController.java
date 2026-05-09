@@ -86,4 +86,16 @@ public class VtonController {
             return ResponseEntity.internalServerError().body(Map.of("error", "Görsel yüklenemedi: " + e.getMessage()));
         }
     }
+
+    // ====================================================================
+    // 🚀 FINOPS: İşlem bitince telefondan tetiklenen temizlik kapısı
+    //  React Native'in işlem bittiğinde "Tamamdır, ben sonucu aldım,
+    //  eski resmi silebilirsin" diyebileceği bir uç nokta (endpoint).
+    // ====================================================================
+    @DeleteMapping("/cleanup-image")
+    public ResponseEntity<?> cleanupImage(@RequestParam String imageUrl) {
+        // Silme servisini çağır
+        cloudinaryService.deleteImageByUrl(imageUrl);
+        return ResponseEntity.ok(Map.of("message", "Geçici görsel başarıyla silindi."));
+    }
 }
