@@ -61,6 +61,32 @@ public class OutfitService {
         return outfitRepository.save(newOutfit);
     }
 
+    // 🚀 YENİ: AR Giydirme veya Canvas (Moodboard) sonucunu portfolyoya kaydeder
+    @Transactional
+    public Outfit saveArOutfit(com.vestify.backend.domain.outfit.dto.SaveArOutfitRequest request) {
+        // 1. Kullanıcıyı bul
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı!"));
+
+        // 2. Kıyafetleri bul ve Set'e çevir (Senin performans optimizasyonun)
+        List<ClothingItem> itemsList = clothingItemRepository.findAllById(request.getClothingItemIds());
+        Set<ClothingItem> itemsSet = new HashSet<>(itemsList);
+
+        // 3. Yeni Kombini (Outfit) oluştur ve AR görselini ekle
+        Outfit newOutfit = Outfit.builder()
+                .user(user)
+                .name(request.getName())
+                .clothingItems(itemsSet)
+                // 🚀 AR Görselinin Cloudinary Linki:
+                .outfitImageUrl(request.getOutfitImageUrl())
+                .moderationStatus(com.vestify.backend.domain.outfit.enums.ModerationStatus.PENDING) // Sosyal ağ için AI moderasyon bekliyor
+                .build();
+
+        log.info("Kullanıcı {} için AR kombini portfolyoya eklendi: {}", request.getUserId(), request.getName());
+        return outfitRepository.save(newOutfit);
+    }
+
+
     // ARTIK SAYFALAMALI VE N+1 KORUMALI ÇALIŞIYOR!
     // Pageable -> Eğer kullanıcının 500 tane kombini varsa, hepsini tek seferde çekmek uygulamayı yavaşlatır ve belleği (RAM) tüketir.
     // Page<OutfitDto> dönerek sadece istenen sayfayı (örneğin ilk 10 kaydı) getirirsin.

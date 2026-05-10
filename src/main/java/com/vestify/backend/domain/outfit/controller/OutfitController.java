@@ -1,6 +1,7 @@
 package com.vestify.backend.domain.outfit.controller;
 
 import com.vestify.backend.domain.outfit.dto.OutfitDto;
+import com.vestify.backend.domain.outfit.dto.SaveArOutfitRequest;
 import com.vestify.backend.domain.outfit.entity.Outfit;
 import com.vestify.backend.domain.outfit.entity.OutfitLog;
 import com.vestify.backend.domain.outfit.service.OutfitService;
@@ -69,6 +70,19 @@ public class OutfitController {
     public ResponseEntity<Void> deleteOutfit(@PathVariable Long id) {
         outfitService.deleteOutfit(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // 🚀 YENİ: AR Kombin Kaydetme Endpoint'i (Sadece Service'e yönlendirir)
+    @PostMapping("/save-ar-look")
+    public ResponseEntity<OutfitDto> saveArOutfitLook(@RequestBody SaveArOutfitRequest request) {
+
+        // Tüm ağır veritabanı işlemlerini OutfitService'e devrediyoruz!
+        Outfit savedOutfit = outfitService.saveArOutfit(request);
+
+        // Kaydedilen kombini güvenli DTO'ya çevirip telefona dönüyoruz
+        OutfitDto responseDto = outfitService.convertToDto(savedOutfit);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
     }
 
 }
