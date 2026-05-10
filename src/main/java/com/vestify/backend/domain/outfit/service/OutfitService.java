@@ -138,6 +138,7 @@ public class OutfitService {
                 .id(outfit.getId())
                 .name(outfit.getName())
                 .clothes(itemDtos)
+                .outfitImageUrl(outfit.getOutfitImageUrl()) // Database'deki AR görselini DTO'ya koyuyoruz.
                 .build();
     }
 
