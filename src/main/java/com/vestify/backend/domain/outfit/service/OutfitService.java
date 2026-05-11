@@ -3,6 +3,7 @@ package com.vestify.backend.domain.outfit.service;
 import com.vestify.backend.domain.outfit.dto.OutfitDto;
 import com.vestify.backend.domain.outfit.entity.Outfit;
 import com.vestify.backend.domain.outfit.entity.OutfitLog;
+import com.vestify.backend.domain.outfit.enums.ModerationStatus;
 import com.vestify.backend.domain.outfit.repository.OutfitLogRepository;
 import com.vestify.backend.domain.outfit.repository.OutfitRepository;
 import com.vestify.backend.domain.user.entity.User;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -38,6 +40,10 @@ public class OutfitService {
     private final UserRepository userRepository;
     private final ClothingItemRepository clothingItemRepository;
 
+    // Önce Cloudinary'ye yükle, kalıcı linki al ve onu kaydet" diyeceğiz.
+    // (Cloudinary API'si dışarıdan URL alıp kendi içine yükleme özelliğine sahiptir).
+    private final com.cloudinary.Cloudinary cloudinary;
+
     @Transactional // Kullanıcın seçtiği parçaları bir araya getirip bir "Kombin" olarak kaydeder.
     public Outfit saveOutfit(Long userId, String outfitName, List<Long> clothingItemIds) {
         User user = userRepository.findById(userId)
@@ -46,7 +52,7 @@ public class OutfitService {
         List<ClothingItem> itemsList = clothingItemRepository.findAllById(clothingItemIds);
         Set<ClothingItem> itemsSet = new HashSet<>(itemsList); // Performans için Set'e çevirdik
         // HashSet Kullanımı: itemsList (Liste) olarak gelen parçaları Set'e çeviriyoruz.
-        // Neden? Çünkü bir kombinde aynı kıyafetten iki tane olamaz.
+        // Neden? Çünkü bir kombinde aynı kıyafetten iki tane olamaz. | Set veri yapısında her eleman eşşiz olurken, Liste veriyapısında veriler tekrarlanabilir
         // Set veri yapısı tekrar eden (yinelenen) kayıtları engellerken arama performansını artırır
 
 
@@ -64,25 +70,40 @@ public class OutfitService {
     // 🚀 YENİ: AR Giydirme veya Canvas (Moodboard) sonucunu portfolyoya kaydeder
     @Transactional
     public Outfit saveArOutfit(com.vestify.backend.domain.outfit.dto.SaveArOutfitRequest request) {
-        // 1. Kullanıcıyı bul
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı!"));
 
-        // 2. Kıyafetleri bul ve Set'e çevir (Senin performans optimizasyonun)
         List<ClothingItem> itemsList = clothingItemRepository.findAllById(request.getClothingItemIds());
         Set<ClothingItem> itemsSet = new HashSet<>(itemsList);
 
-        // 3. Yeni Kombini (Outfit) oluştur ve AR görselini ekle
-        Outfit newOutfit = Outfit.builder()
-                .user(user)
-                .name(request.getName())
-                .clothingItems(itemsSet)
-                // 🚀 AR Görselinin Cloudinary Linki:
-                .outfitImageUrl(request.getOutfitImageUrl())
-                .moderationStatus(com.vestify.backend.domain.outfit.enums.ModerationStatus.PENDING) // Sosyal ağ için AI moderasyon bekliyor
-                .build();
+        String finalImageUrl = request.getOutfitImageUrl();
 
-        log.info("Kullanıcı {} için AR kombini portfolyoya eklendi: {}", request.getUserId(), request.getName());
+        // 🚀 MİMARİ HAMLE: Eğer gelen link Cloudinary'de değilse (Fal.ai linki ise), onu Cloudinary'e yükle!
+        try {
+            if (finalImageUrl != null && finalImageUrl.startsWith("http") && !finalImageUrl.contains("cloudinary.com")) {
+                log.info("Geçici AI linki tespit edildi, Cloudinary'e aktarılıyor... Link: {}", finalImageUrl);
+
+                // Cloudinary'e URL'den direkt yükleme yapıyoruz
+                Map uploadResult = cloudinary.uploader().upload(finalImageUrl, com.cloudinary.utils.ObjectUtils.emptyMap());
+                String cloudinaryUrl = uploadResult.get("url").toString();
+
+                // WebP Sıkıştırma Optimizasyonu
+                finalImageUrl = cloudinaryUrl.replace("/upload/", "/upload/f_webp,q_auto/");
+                log.info("Cloudinary'e kalıcı olarak kaydedildi: {}", finalImageUrl);
+            }
+        } catch (Exception e) {
+            log.error("Cloudinary otomatik yükleme hatası: {}", e.getMessage());
+            // Hata olursa en azından orijinal linki kaydetsin
+        }
+
+        // Builder yerine Garantici (Manual) Set Yöntemi
+        Outfit newOutfit = new Outfit();
+        newOutfit.setUser(user);
+        newOutfit.setName(request.getName());
+        newOutfit.setClothingItems(itemsSet);
+        newOutfit.setOutfitImageUrl(finalImageUrl); // 🚀 Artık %100 Kalıcı WebP Cloudinary Linki!
+        newOutfit.setModerationStatus(com.vestify.backend.domain.outfit.enums.ModerationStatus.PENDING);
+
         return outfitRepository.save(newOutfit);
     }
 
