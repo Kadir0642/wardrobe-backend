@@ -46,6 +46,14 @@ public class Outfit {
     @Column(name = "outfit_image_url")
     private String outfitImageUrl;
 
+    //  Kombinin türünü belirler (Örn: "LOOKBOOK", "AR_TRYON", "MANUAL")
+    @Column(name = "outfit_type", length = 50)
+    private String type;
+
+    //  Canvas ekranındaki koordinatları tutan JSON verisi
+    @Column(name = "canvas_data", columnDefinition = "TEXT")
+    private String canvasData;
+
     @Column(name= "created_at", updatable=false)
     private LocalDateTime createdAt;
 

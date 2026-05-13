@@ -4,6 +4,8 @@ import com.vestify.backend.domain.outfit.entity.Outfit;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import org.springframework.data.domain.Pageable;
@@ -30,5 +32,12 @@ public interface OutfitRepository extends JpaRepository<Outfit, Long> {
     //Performans: Veritabanı trafiği azalır.
     //Hız: Uygulama çok daha hızlı cevap verir.
     //Kaynak Yönetimi: Sunucun gereksiz yere SQL üretmekle uğraşmaz.
+
+    // Birebir eşleşen tipi getir (Örn: Sadece LOOKBOOK'lar)
+    Page<Outfit> findByUserIdAndType(Long userId, String type, Pageable pageable);
+
+    //  Belirtilen tipte OLMAYANLARI veya tipi NULL olanları getir (Eski verileri kaybetmemek için)
+    @Query("SELECT o FROM Outfit o WHERE o.user.id = :userId AND (o.type IS NULL OR o.type != :type)")
+    Page<Outfit> findByUserIdAndTypeNotOrTypeIsNull(@Param("userId") Long userId, @Param("type") String type, Pageable pageable);
 
 }

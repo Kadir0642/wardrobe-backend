@@ -49,12 +49,13 @@ public class OutfitController {
     //Ör: adresteki .../123/save kısmındaki 123 sayısını alır ve userId değişkenine koyar. Böylece "Hangi kullanıcı için kayıt yapıyorum?" sorusunun cevabını buradan alır.
     //@RequestBody OutfitRequest request -> İsteğin gövdesindeki (body) veriyi alır.
     //Kullanıcı API'ye JSON formatında veri gönderir (Örneğin: {"name": "Mavi Gömlek", "color": "Blue"}). Spring bu JSON'ı otomatik olarak OutfitRequest isimli Java nesnes
-    // Örn: /api/v1/outfits/user/1?page=0&size=10
+    // Örn: /api/v1/outfits/user/1?type=LOOKBOOK&page=0&size=15
     @GetMapping("/user/{userId}")
     public ResponseEntity<Page<OutfitDto>> getUserOutfits( //@PathVariable Long userId -> URL'deki {userId} kısmını yakalar
             @PathVariable Long userId, // Parametre Bağlama: @PathVariable("id") Long id URL değerini değişkene bağlamak için kullanılır
-            @PageableDefault(size = 10) Pageable pageable){
-        return ResponseEntity.ok(outfitService.getUserOutfits(userId, pageable));
+            @RequestParam(required = false) String type, // Mobilden gelen filtre
+            @PageableDefault(size = 15) Pageable pageable){ //  Sayfa boyutu 15
+        return ResponseEntity.ok(outfitService.getUserOutfits(userId, type, pageable));
     }
 
     // Kombin İsmi Güncelleme

@@ -101,7 +101,9 @@ public class OutfitService {
         newOutfit.setUser(user);
         newOutfit.setName(request.getName());
         newOutfit.setClothingItems(itemsSet);
-        newOutfit.setOutfitImageUrl(finalImageUrl); // 🚀 Artık %100 Kalıcı WebP Cloudinary Linki!
+        newOutfit.setType(request.getType()); // 🚀 YENİ EKLENDİ
+        newOutfit.setCanvasData(request.getCanvasData()); // 🚀 YENİ EKLENDİ
+        newOutfit.setOutfitImageUrl(finalImageUrl);
         newOutfit.setModerationStatus(com.vestify.backend.domain.outfit.enums.ModerationStatus.PENDING);
 
         return outfitRepository.save(newOutfit);
@@ -111,10 +113,17 @@ public class OutfitService {
     // ARTIK SAYFALAMALI VE N+1 KORUMALI ÇALIŞIYOR!
     // Pageable -> Eğer kullanıcının 500 tane kombini varsa, hepsini tek seferde çekmek uygulamayı yavaşlatır ve belleği (RAM) tüketir.
     // Page<OutfitDto> dönerek sadece istenen sayfayı (örneğin ilk 10 kaydı) getirirsin.
+    // Sayfalama + Tip Filtrelemesi
     @Transactional(readOnly = true) // Veritabanına "Sadece okuma yapacağım, veriyi değiştirmeyeceğim" diyorsun. Bu, veritabanı seviyesinde performans optimizasyonu sağlar.
-    public Page<OutfitDto> getUserOutfits(Long userId, Pageable pageable) {
-        // Not: OutfitRepository'de sayfalamalı metod yazılmalı.
-        // Bunu Controller'ı yazarken EntityGraph ile birlikte Page dönecek şekilde bağlayacağız.
+    public Page<OutfitDto> getUserOutfits(Long userId, String type, Pageable pageable) {
+        if ("LOOKBOOK".equalsIgnoreCase(type)) {
+            // Sadece Lookbook olanları getir
+            return outfitRepository.findByUserIdAndType(userId, "LOOKBOOK", pageable).map(this::convertToDto);
+        } else if ("REGULAR".equalsIgnoreCase(type)) {
+            // Eski verilerin type alanı null olabileceği için "LOOKBOOK OLMAYANLARI" getir diyoruz.
+            return outfitRepository.findByUserIdAndTypeNotOrTypeIsNull(userId, "LOOKBOOK", pageable).map(this::convertToDto);
+        }
+        // Tip belirtilmediyse hepsini getir
         return outfitRepository.findByUserId(userId, pageable).map(this::convertToDto);
     }
 
@@ -160,6 +169,8 @@ public class OutfitService {
                 .name(outfit.getName())
                 .clothes(itemDtos)
                 .outfitImageUrl(outfit.getOutfitImageUrl()) // Database'deki AR görselini DTO'ya koyuyoruz.
+                .type(outfit.getType())
+                .canvasData(outfit.getCanvasData())
                 .build();
     }
 
