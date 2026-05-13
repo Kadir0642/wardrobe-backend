@@ -24,8 +24,8 @@ public class VtonWorker {
     @Value("${fal.ai.api-key}")
     private String falAiApiKey;
 
-    // 🚀 MİMARİ DOKUNUŞ: WebClient'ı performanslı çalışması için Constructor'da bir kez inşa ediyoruz (Build)
-    // 🚀 DÜZELTME: WebClient.Builder'ı Spring'den (parametre olarak) dilenmek yerine,
+    //  WebClient'ı performanslı çalışması için Constructor'da bir kez inşa ediyoruz (Build)
+    //  WebClient.Builder'ı Spring'den (parametre olarak) dilenmek yerine,
     // WebClient.builder() diyerek statik olarak kendimiz yaratıyoruz! Yıkılmaz bir mimari.
     public VtonWorker(VtonTaskTracker taskTracker, @Value("${fal.ai.endpoint}") String falAiEndpoint) {
         this.taskTracker = taskTracker;
@@ -54,7 +54,7 @@ public class VtonWorker {
             requestBody.put("garment_image_url", message.getGarmentImageUrls().get(0));
             requestBody.put("category", "upper_body");
 
-            // 🚀 İŞTE EKSİK OLAN ZORUNLU ALAN! Yapay zekaya kıyafeti tanıtıyoruz.
+            // İŞTE EKSİK OLAN ZORUNLU ALAN! Yapay zekaya kıyafeti tanıtıyoruz.
             // AI modelleri sadece fotoğrafa bakarak çalışmaz, onlara ufak bir "Text Prompt" (Yazılı İpucu) vermek gerekir.
             // IDM-VTON modelinin API sözleşmesinde description alanı zorunluymuş!
             requestBody.put("description", "A stylish piece of clothing");

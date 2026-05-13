@@ -4,13 +4,13 @@ import com.vestify.backend.core.service.CloudinaryService;
 import com.vestify.backend.domain.vton.dto.VtonTaskMessage;
 import com.vestify.backend.domain.vton.dto.VtonTaskRequest;
 import com.vestify.backend.domain.vton.service.VtonService;
-import com.vestify.backend.domain.vton.service.VtonTaskTracker; // 🚀 YENİ: Takip Sınıfımız
+import com.vestify.backend.domain.vton.service.VtonTaskTracker; //  Takip Sınıfımız
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.MediaType;
-import java.util.Map; // 🚀 YENİ: JSON dönmek için eklendi
+import java.util.Map; //  JSON dönmek için eklendi
 
 
 @RestController
@@ -21,7 +21,7 @@ public class VtonController {
     private VtonService vtonService;
 
     @Autowired
-    private VtonTaskTracker taskTracker; // 🚀 YENİ: Takip Merkezini içeri aldık
+    private VtonTaskTracker taskTracker; // Takip Merkezini içeri aldık
 
     // ====================================================================
     // YENİ (ASYNC): Mobil Uygulamanın Kullanacağı Kuyruk Sistemi
@@ -39,10 +39,10 @@ public class VtonController {
             // 2. Servise gönderip doğrudan takip numarasını alıyoruz (Senin orjinal kodun)
             String requestId = vtonService.sendTaskToQueue(message);
 
-            // 🚀 3. YENİ: RabbitMQ'ya giden bu işin numarasını Takip Merkezine "PENDING" olarak kaydediyoruz
+            //  3. YENİ: RabbitMQ'ya giden bu işin numarasını Takip Merkezine "PENDING" olarak kaydediyoruz
             taskTracker.startTask(requestId);
 
-            // 🚀 4. DÜZELTME: Telefona düz metin yerine JSON (Map) dönüyoruz. 
+            //  4. DÜZELTME: Telefona düz metin yerine JSON (Map) dönüyoruz.
             // Çünkü telefondaki kodumuz "response.data.taskId" diyerek bu numarayı okumaya çalışıyor.
             return ResponseEntity.accepted().body(Map.of( // Map.of() kullanarak bir JSON objesi yolladık
                     "message", "İşlem kuyruğa alındı.",
@@ -55,7 +55,7 @@ public class VtonController {
     }
 
     // ====================================================================
-    // 🚀 YENİ: Telefonun Akıllı Polling (3-6-9 sn) ile soracağı kapı [ ENDPOINT ]
+    //  Telefonun Akıllı Polling (3-6-9 sn) ile soracağı kapı [ ENDPOINT ]
     // ====================================================================
     @GetMapping("/result/{taskId}")
     public ResponseEntity<?> getVtonResult(@PathVariable String taskId) {
@@ -71,9 +71,8 @@ public class VtonController {
     }
 
     // ====================================================================
-    // 🚀 YENİ: Kullanıcının fotoğrafını Cloudinary'ye yükleme kapısı
+    // Kullanıcının fotoğrafını Cloudinary'ye yükleme kapısı
     // ====================================================================
-    // VtonController.java içinde:
     @Autowired
     private CloudinaryService cloudinaryService;
 
@@ -88,7 +87,7 @@ public class VtonController {
     }
 
     // ====================================================================
-    // 🚀 FINOPS: İşlem bitince telefondan tetiklenen temizlik kapısı
+    //  FINOPS: İşlem bitince telefondan tetiklenen temizlik kapısı
     //  React Native'in işlem bittiğinde "Tamamdır, ben sonucu aldım,
     //  eski resmi silebilirsin" diyebileceği bir uç nokta (endpoint).
     // ====================================================================
