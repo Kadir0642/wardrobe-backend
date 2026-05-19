@@ -1,6 +1,5 @@
 package com.vestify.backend.domain.vton.service;
 
-import org.springframework.web.reactive.function.client.WebClientResponseException; // 🚀 En üste bu import'u eklemeyi unutma!
 import com.vestify.backend.core.config.RabbitMQConfig;
 import com.vestify.backend.domain.vton.dto.VtonTaskMessage;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -9,10 +8,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -24,9 +24,6 @@ public class VtonWorker {
     @Value("${fal.ai.api-key}")
     private String falAiApiKey;
 
-    //  WebClient'ı performanslı çalışması için Constructor'da bir kez inşa ediyoruz (Build)
-    //  WebClient.Builder'ı Spring'den (parametre olarak) dilenmek yerine,
-    // WebClient.builder() diyerek statik olarak kendimiz yaratıyoruz! Yıkılmaz bir mimari.
     public VtonWorker(VtonTaskTracker taskTracker, @Value("${fal.ai.endpoint}") String falAiEndpoint) {
         this.taskTracker = taskTracker;
         this.webClient = WebClient.builder()
@@ -34,87 +31,98 @@ public class VtonWorker {
                 .build();
     }
 
-    // RabbitMQ mesaj kuyruğunu 7/24 dinler
     @RabbitListener(queues = RabbitMQConfig.VTON_QUEUE)
     public void processVtonTask(VtonTaskMessage message) {
         String taskId = message.getRequestId();
 
         System.out.println("=====================================================");
-        System.out.println("🚀 [FAL.AI WEBCLIENT WORKER] YENİ GÖREV ALINDI!");
-        System.out.println("Task ID: " + taskId);
+        System.out.println("🚀 [MULTI-GARMENT PIPELINE] İŞLEM BAŞLADI: " + taskId);
 
-        // 🚀 KONTROL: React Native'den linkler doğru isimle gelebilmiş mi? (null olmamalı!)
-        System.out.println("Kişi URL: " + message.getPersonImageUrl());
-        System.out.println("Kıyafet URL: " + message.getGarmentImageUrls());
+        // Orijinal Mankeni (Person) Başlangıç Olarak Alıyoruz
+        String currentPersonImage = message.getPersonImageUrl();
+        List<VtonTaskMessage.GarmentItemMessage> garments = message.getGarments();
 
         try {
-            // 1. Fal.ai Paketini Hazırla  | burası sanırım kullanıcının isteğine göre giydirme yapacağımız alan seçeneklerle alakalı giyim şekli yaptırılabilir.
-            Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("human_image_url", message.getPersonImageUrl());
-            requestBody.put("garment_image_url", message.getGarmentImageUrls().get(0));
-            requestBody.put("category", "upper_body");
+            //  STRATEJİ: Kıyafetleri Doğru Sırayla Giydirmek!
+            // 1. Önce Alt Giyim (BOTTOMS)
+            // 2. Sonra Üst Giyim (TOPS veya FULL BODY)
+            // 3. En son Dış Giyim (OUTERWEAR - Ceket vs.)
 
-            // İŞTE EKSİK OLAN ZORUNLU ALAN! Yapay zekaya kıyafeti tanıtıyoruz.
-            // AI modelleri sadece fotoğrafa bakarak çalışmaz, onlara ufak bir "Text Prompt" (Yazılı İpucu) vermek gerekir.
-            // IDM-VTON modelinin API sözleşmesinde description alanı zorunluymuş!
-            requestBody.put("description", "A stylish piece of clothing");
+            // 1. AŞAMA: BOTTOMS (Alt Giyim)
+            currentPersonImage = processGarmentCategory(garments, "BOTTOMS", currentPersonImage, "lower_body", "A pair of pants or skirt");
 
-            requestBody.put("num_inference_steps", 30);
+            // 2. AŞAMA: FULL BODY (Elbise vs. varsa alt ve üstü ezer)
+            currentPersonImage = processGarmentCategory(garments, "FULL BODY", currentPersonImage, "dresses", "A full body dress");
 
-            System.out.println("⏳ Fal.ai GPU'ları kıyafeti giydiriyor (Non-blocking istek atılıyor -> 165 saniyeye kadar sürebilir)...");
-
-            // 2. WEBCLIENT İLE ASENKRON İSTEK (REACTIVE PROGRAMMING)
-            Map response = webClient.post()
-                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                    .header(HttpHeaders.AUTHORIZATION, "Key " + falAiApiKey)
-                    .bodyValue(requestBody)
-                    .retrieve() // Cevabı getir
-                    .bodyToMono(Map.class) // Gelen JSON'u Map'e dönüştür
-                    .timeout(Duration.ofSeconds(165)) // AI 165 saniyede cevap vermezse işlemi iptal et | ARTTIRDIK sebebi -> ilk işlemlerde GPU modeli yeni belleğe yükleme işlemleri 45-60 saniye sürer sonraki işlemeler oldukça hızlı sonuçlanır.
-                    .block(); // ⚠️ DİKKAT: Neden block() kullandığımızı aşağıda açıkladım!
-
-
-            // WebClient tamamen asenkrondur. Eğer .block() yerine reaktif dünyanın kuralı olan .subscribe() kullansaydık, kod hiç beklemeden anında biterdi.
-            //Fakat burada bir "Tuzak" var: Biz bu kodu RabbitMQ Listener'ının içinde çalıştırıyoruz.
-            // Eğer kod anında biterse, RabbitMQ işlem bitti sanıp mesajı kuyruktan siler.
-            // Eğer o sırada Fal.ai'den hala cevap geliyorsa ve senin sunucun yeniden başlarsa, o mesaj sonsuza kadar kaybolur!
-            // Bu yüzden, mesajı güvene almak (Message Durability) adına RabbitMQ'ya "Fal.ai'den cevap gelene kadar
-            // bu mesajı kuyrukta güvende tut" demek için burada block() kullanmak bir sektör standardıdır (Manuel Ack sistemi kurmadığımız sürece).
-            // Yani WebClient'in gücünü kullanıyoruz ama mesajlarımızı da koruma altına alıyoruz.
-
-            // RabbitMQ'da Manuel Ack (Acknowledgement - Onaylama) Sistemi, bir tüketicinin (consumer - Java Spring Boot uygulamanız)
-            // kuyruktan aldığı bir mesajı başarılı bir şekilde işledikten sonra, RabbitMQ sunucusuna "bu mesajı başarıyla işledim,
-            // kuyruktan silebilirsin" bilgisini manuel olarak gönderdiği bir güven mekanizmasıdır.
-
-            //Bu sistem, mesajların işlenirken kaybolmasını önler ve veri tutarlılığını sağlar.
-            //Neden Manuel Ack Kullanmalıyız?
-            //Güvenilir İşleme: Otomatik Ack sisteminde mesaj tüketiciye ulaştığı anda kuyruktan silinir.
-            // Eğer tüketici mesajı işlerken hata verirse (crash, exception), mesaj kaybolur.
-            // Hata Yönetimi: Manuel Ack ile mesajın işlenmesi başarısız olursa, mesajı reddedip (Nack/Reject)
-            // tekrar kuyruğa girmesini (requeue) veya ölü mektup kuyruğuna (Dead Letter Exchange - DLX) yönlendirebilirsiniz.
-            //İşlem Kontrolü: Mesajın ne zaman "tamamlandı" sayılacağına uygulama karar verir
-
-
-            // 3. BAŞARILI SONUCU İŞLE
-            if (response != null && response.containsKey("image")) {
-                Map<String, Object> imageObj = (Map<String, Object>) response.get("image");
-                String resultImageUrl = (String) imageObj.get("url");
-
-                taskTracker.completeTask(taskId, resultImageUrl);
-
-                System.out.println("✅ [WEBCLIENT] İŞLEM HARİKA BİR ŞEKİLDE BİTTİ!");
-                System.out.println("📸 Sonuç URL: " + resultImageUrl);
+            // 3. AŞAMA: TOPS (Üst Giyim - Eğer Full Body yoksa)
+            boolean hasFullBody = garments.stream().anyMatch(g -> "FULL BODY".equalsIgnoreCase(g.getCategory()));
+            if (!hasFullBody) {
+                currentPersonImage = processGarmentCategory(garments, "TOPS", currentPersonImage, "upper_body", "A stylish top, shirt or t-shirt");
             }
 
+            // 4. AŞAMA: OUTERWEAR (Ceket/Mont - Katmanlama)
+            //  Ceket giydirirken prompta "open jacket" yazıyoruz ki içindekini silmesin!
+            currentPersonImage = processGarmentCategory(garments, "OUTERWEAR", currentPersonImage, "upper_body", "An open jacket or coat worn over the clothes");
+
+            //  TÜM ZİNCİRLEME BİTTİ! FİNAL RESMİ TELEFONA YOLLA
+            taskTracker.completeTask(taskId, currentPersonImage);
+            System.out.println("✅ [PIPELINE BİTTİ] FİNAL SONUÇ: " + currentPersonImage);
+
         } catch (WebClientResponseException e) {
-            // 🚀 YENİ: EĞER FAL.AI KIZARSA, BİZE TAM OLARAK NEDENİNİ SÖYLEYECEK!
-            System.err.println("🚨 Fal.ai API Hatası Kodu: " + e.getStatusCode());
-            System.err.println("🚨 Fal.ai Diyor ki: " + e.getResponseBodyAsString());
+            System.err.println("🚨 Fal.ai Hatası: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
             taskTracker.completeTask(taskId, "HATA");
         } catch (Exception e) {
-            System.err.println("🚨 WebClient Genel Hata: " + e.getMessage());
+            System.err.println("🚨 Pipeline Çöktü: " + e.getMessage());
             taskTracker.completeTask(taskId, "HATA");
         }
         System.out.println("=====================================================");
+    }
+
+    /**
+     * 🚀 Helper Metot: Belirli bir kategorideki kıyafeti bulur, yoksa mevcut resmi geri döner.
+     * Varsa AI'a gönderir ve çıkan *yeni* resim URL'sini döner.
+     */
+    private String processGarmentCategory(List<VtonTaskMessage.GarmentItemMessage> garments, String categoryName, String currentPersonImage, String aiCategory, String prompt) {
+
+        // Bu kategoride giyilecek bir kıyafet var mı diye bakıyoruz
+        VtonTaskMessage.GarmentItemMessage garmentToWear = garments.stream()
+                .filter(g -> categoryName.equalsIgnoreCase(g.getCategory()))
+                .findFirst()
+                .orElse(null);
+
+        // Eğer kullanıcı bu kategoriden bir şey seçmediyse, mankenin mevcut halini bozmadan aynen geri yolla
+        if (garmentToWear == null) {
+            return currentPersonImage;
+        }
+
+        System.out.println("⏳ " + categoryName + " Giydiriliyor... (" + garmentToWear.getUrl() + ")");
+
+        // Fal.ai API İsteği Hazırlığı
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("human_image_url", currentPersonImage); // Mankenin o anki hali
+        requestBody.put("garment_image_url", garmentToWear.getUrl()); // Giydirilecek kıyafet
+        requestBody.put("category", aiCategory);
+        requestBody.put("description", prompt); // AI'ı yönlendiren sihirli ipucu
+        // 🚀 FİNOPS: Turbo modellere geçene kadar şimdilik 25 step ile kalite/hız dengesi kuralım
+        requestBody.put("num_inference_steps", 25);
+
+        // API İsteği
+        Map response = webClient.post()
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .header(HttpHeaders.AUTHORIZATION, "Key " + falAiApiKey)
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .timeout(Duration.ofSeconds(165)) // Her bir kıyafet için bekleme süresi
+                .block();
+
+        if (response != null && response.containsKey("image")) {
+            Map<String, Object> imageObj = (Map<String, Object>) response.get("image");
+            String resultImageUrl = (String) imageObj.get("url");
+            System.out.println("✨ " + categoryName + " başarıyla giydirildi: " + resultImageUrl);
+            return resultImageUrl; // Çıkan yeni resmi (Mankenin yeni halini) geri dön
+        }
+
+        throw new RuntimeException(categoryName + " giydirilirken AI'dan geçerli bir resim dönmedi.");
     }
 }

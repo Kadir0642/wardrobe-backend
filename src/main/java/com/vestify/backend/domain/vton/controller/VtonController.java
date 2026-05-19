@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.MediaType;
+
+import java.util.List;
 import java.util.Map; //  JSON dönmek için eklendi
 
 
@@ -33,7 +35,14 @@ public class VtonController {
             VtonTaskMessage message = new VtonTaskMessage();
             message.setUserId(request.getUserId());
             message.setPersonImageUrl(request.getPersonUrl());
-            message.setGarmentImageUrls(request.getGarmentUrls());
+
+            // (Gelen listeyi RabbitMQ listesine dönüştür)
+            List<VtonTaskMessage.GarmentItemMessage> garmentMessages = request.getGarments().stream()
+                    .map(g -> new VtonTaskMessage.GarmentItemMessage(g.getUrl(), g.getCategory()))
+                    .collect(java.util.stream.Collectors.toList());
+
+            message.setGarments(garmentMessages);
+
             message.setTuckedIn(request.isTuckedIn());
 
             // 2. Servise gönderip doğrudan takip numarasını alıyoruz (Senin orjinal kodun)
