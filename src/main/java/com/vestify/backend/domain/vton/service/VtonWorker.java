@@ -44,9 +44,14 @@ public class VtonWorker {
 
         try {
             //  STRATEJİ: Kıyafetleri Doğru Sırayla Giydirmek!
+            // --- Önce Alt, Sonra Üst (veya Elbise), En Son Ceket. ---
             // 1. Önce Alt Giyim (BOTTOMS)
             // 2. Sonra Üst Giyim (TOPS veya FULL BODY)
             // 3. En son Dış Giyim (OUTERWEAR - Ceket vs.)
+
+            // Akıllı Atlamalar: Eğer kullanıcı sadece Pantolon seçtiyse,
+            // Üst ve Ceket adımları otomatik atlanır (garmentToWear == null),
+            // AI'a boşuna para ve saniye ödemeyiz!
 
             // 1. AŞAMA: BOTTOMS (Alt Giyim)
             currentPersonImage = processGarmentCategory(garments, "BOTTOMS", currentPersonImage, "lower_body", "A pair of pants or skirt");
