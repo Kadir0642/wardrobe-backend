@@ -24,11 +24,14 @@ public class VtonWorker {
     @Value("${fal.ai.api-key}")
     private String falAiApiKey;
 
-    public VtonWorker(VtonTaskTracker taskTracker, @Value("${fal.ai.endpoint}") String falAiEndpoint) {
+    // 🚀 DİNAMİK YÖNLENDİRME (ROUTING) İÇİN ENDPOINT'LER
+    private final String ENDPOINT_IDM_VTON = "https://fal.run/fal-ai/idm-vton";
+    private final String ENDPOINT_FASHN = "https://fal.run/fal-ai/fashn-vton"; // Full body için FASHN modeli
+
+    public VtonWorker(VtonTaskTracker taskTracker) {
         this.taskTracker = taskTracker;
-        this.webClient = WebClient.builder()
-                .baseUrl(falAiEndpoint)
-                .build();
+        // BaseUrl'i burada tanımlamıyoruz, çünkü her istekte (kategoriye göre) Endpoint değişecek!
+        this.webClient = WebClient.builder().build();
     }
 
     @RabbitListener(queues = RabbitMQConfig.VTON_QUEUE)
@@ -36,14 +39,13 @@ public class VtonWorker {
         String taskId = message.getRequestId();
 
         System.out.println("=====================================================");
-        System.out.println("🚀 [MULTI-GARMENT PIPELINE] İŞLEM BAŞLADI: " + taskId);
+        System.out.println("🚀 [MULTI-GARMENT PIPELINE w/ ROUTING] İŞLEM BAŞLADI: " + taskId);
 
-        // Orijinal Mankeni (Person) Başlangıç Olarak Alıyoruz
         String currentPersonImage = message.getPersonImageUrl();
         List<VtonTaskMessage.GarmentItemMessage> garments = message.getGarments();
 
         try {
-            //  STRATEJİ: Kıyafetleri Doğru Sırayla Giydirmek!
+                        //  STRATEJİ: Kıyafetleri Doğru Sırayla Giydirmek!
             // --- Önce Alt, Sonra Üst (veya Elbise), En Son Ceket. ---
             // 1. Önce Alt Giyim (BOTTOMS)
             // 2. Sonra Üst Giyim (TOPS veya FULL BODY)
@@ -52,29 +54,28 @@ public class VtonWorker {
             // Akıllı Atlamalar: Eğer kullanıcı sadece Pantolon seçtiyse,
             // Üst ve Ceket adımları otomatik atlanır (garmentToWear == null),
             // AI'a boşuna para ve saniye ödemeyiz!
-
-            // 1. AŞAMA: BOTTOMS (Alt Giyim)
+            // 1. AŞAMA: BOTTOMS (Alt Giyim -> IDM-VTON)
             currentPersonImage = processGarmentCategory(garments, "BOTTOMS", currentPersonImage, "lower_body",
                     "The exact bottoms shown in the reference image. Strictly preserve the original length, fit, and design. Do not alter the style.");
 
-            // 2. AŞAMA: FULL BODY (Elbise) - Agresif Pantolon Silme ve Kol Koruma Promptu! | Completely cover and replace any existing pants ->  Mevcut pantolonu tamamen kapa ve değiştir
-            // Eğer FASHN modelini (fal-ai/fashn) kullansaydık kategoriyi dresses yerine one-pieces yapmalıydık
-            currentPersonImage = processGarmentCategory(garments, "FULL BODY", currentPersonImage, "dresses",
+            // 2. AŞAMA: FULL BODY (Elbise -> FASHN)
+            // 🚀 BÜYÜK DEĞİŞİKLİK: "dresses" kategorisi için fashn modelinde kategori "one-pieces" olmalı!
+            currentPersonImage = processGarmentCategory(garments, "FULL BODY", currentPersonImage, "one-pieces",
                     "The exact full body dress shown in the reference garment image. Strictly preserve the original sleeve length (if sleeveless, keep it sleeveless) and neckline. Completely cover and replace any existing pants or trousers on the person's legs.");
 
-            // 3. AŞAMA: TOPS (Üst Giyim - Eğer Full Body yoksa)
+            // 3. AŞAMA: TOPS (Üst Giyim -> IDM-VTON)
             boolean hasFullBody = garments.stream().anyMatch(g -> "FULL BODY".equalsIgnoreCase(g.getCategory()));
             if (!hasFullBody) {
                 currentPersonImage = processGarmentCategory(garments, "TOPS", currentPersonImage, "upper_body",
                         "The exact top shown in the reference garment image. Strictly preserve the original sleeve length and neckline. Do not add sleeves if the garment is sleeveless.");
             }
 
-            // 4. AŞAMA: OUTERWEAR (Ceket/Mont - Katmanlama)
+            // 4. AŞAMA: OUTERWEAR (Dış Giyim -> IDM-VTON)
             //  Ceket giydirirken prompta "open jacket" yazıyoruz ki içindekini silmesin!
             currentPersonImage = processGarmentCategory(garments, "OUTERWEAR", currentPersonImage, "upper_body",
                     "An open jacket or coat worn over the existing clothes. Preserve the exact design, collar, and sleeve length of the reference outerwear.");
 
-            //  TÜM ZİNCİRLEME BİTTİ! FİNAL RESMİ TELEFONA YOLLA
+            // 🚀 TÜM ZİNCİRLEME BİTTİ! FİNAL RESMİ TELEFONA YOLLA
             taskTracker.completeTask(taskId, currentPersonImage);
             System.out.println("✅ [PIPELINE BİTTİ] FİNAL SONUÇ: " + currentPersonImage);
 
@@ -89,8 +90,7 @@ public class VtonWorker {
     }
 
     /**
-     * 🚀 Helper Metot: Belirli bir kategorideki kıyafeti bulur, yoksa mevcut resmi geri döner.
-     * Varsa AI'a gönderir ve çıkan *yeni* resim URL'sini döner.
+     * 🚀 Helper Metot: Belirli bir kategorideki kıyafeti bulur, model seçer ve API'ye atar.
      */
     private String processGarmentCategory(List<VtonTaskMessage.GarmentItemMessage> garments, String categoryName, String currentPersonImage, String aiCategory, String prompt) {
 
@@ -100,24 +100,36 @@ public class VtonWorker {
                 .findFirst()
                 .orElse(null);
 
-        // Eğer kullanıcı bu kategoriden bir şey seçmediyse, mankenin mevcut halini bozmadan aynen geri yolla
         if (garmentToWear == null) {
-            return currentPersonImage;
+            return currentPersonImage; // Bu kategoriden bir şey giyilmeyecekse pas geç
         }
 
-        System.out.println("⏳ " + categoryName + " Giydiriliyor... (" + garmentToWear.getUrl() + ")");
+        // 🚀 DİNAMİK MODEL SEÇİMİ (DYNAMIC ROUTING)
+        String targetEndpoint = categoryName.equals("FULL BODY") ? ENDPOINT_FASHN : ENDPOINT_IDM_VTON;
+
+        System.out.println("⏳ " + categoryName + " Giydiriliyor... Model: " + (categoryName.equals("FULL BODY") ? "FASHN" : "IDM-VTON"));
 
         // Fal.ai API İsteği Hazırlığı
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("human_image_url", currentPersonImage); // Mankenin o anki hali
         requestBody.put("garment_image_url", garmentToWear.getUrl()); // Giydirilecek kıyafet
         requestBody.put("category", aiCategory);
-        requestBody.put("description", prompt); // AI'ı yönlendiren sihirli ipucu
-        // 🚀 FİNOPS: Turbo modellere geçene kadar şimdilik 25 step ile kalite/hız dengesi kuralım
-        requestBody.put("num_inference_steps", 25);
+
+        // 🚀 MODEL BAZLI PARAMETRE AYARLAMASI
+        if (targetEndpoint.equals(ENDPOINT_FASHN)) {
+            // FASHN modeli "description" parametresini desteklemeyebilir (sadece referans resmine odaklanır),
+            // O yüzden prompt parametresi (guidance_scale) veya özel parametreleri FASHN dokümantasyonuna göre ayarlamalıyız.
+            // Biz genelde FASHN için sadece human ve garment yollarız:
+            requestBody.put("guidance_scale", 2.0); // Fashn'a kıyafete ne kadar sadık kalması gerektiğini söyleriz
+        } else {
+            // IDM-VTON Modeli (Description ve Steps alır)
+            requestBody.put("description", prompt);
+            requestBody.put("num_inference_steps", 25); //FİNOPS: Turbo modellere geçene kadar şimdilik 25 step ile kalite/hız dengesi kuralım
+        }
 
         // API İsteği
         Map response = webClient.post()
+                .uri(targetEndpoint) // Her kategori için seçilen modele gider
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .header(HttpHeaders.AUTHORIZATION, "Key " + falAiApiKey)
                 .bodyValue(requestBody)
