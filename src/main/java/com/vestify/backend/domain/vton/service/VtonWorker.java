@@ -57,7 +57,8 @@ public class VtonWorker {
             currentPersonImage = processGarmentCategory(garments, "BOTTOMS", currentPersonImage, "lower_body", "A pair of pants or skirt");
 
             // 2. AŞAMA: FULL BODY (Elbise vs. varsa alt ve üstü ezer)
-            currentPersonImage = processGarmentCategory(garments, "FULL BODY", currentPersonImage, "dresses", "A full body dress");
+            // Eğer FASHN modelini (fal-ai/fashn) kullansaydık kategoriyi dresses yerine one-pieces yapmalıydık
+            currentPersonImage = processGarmentCategory(garments, "FULL BODY", currentPersonImage, "dresses", "A long full body dress covering the legs, completely hiding and replacing any pants");
 
             // 3. AŞAMA: TOPS (Üst Giyim - Eğer Full Body yoksa)
             boolean hasFullBody = garments.stream().anyMatch(g -> "FULL BODY".equalsIgnoreCase(g.getCategory()));
