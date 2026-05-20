@@ -54,21 +54,25 @@ public class VtonWorker {
             // AI'a boşuna para ve saniye ödemeyiz!
 
             // 1. AŞAMA: BOTTOMS (Alt Giyim)
-            currentPersonImage = processGarmentCategory(garments, "BOTTOMS", currentPersonImage, "lower_body", "A pair of pants or skirt");
+            currentPersonImage = processGarmentCategory(garments, "BOTTOMS", currentPersonImage, "lower_body",
+                    "The exact bottoms shown in the reference image. Strictly preserve the original length, fit, and design. Do not alter the style.");
 
-            // 2. AŞAMA: FULL BODY (Elbise vs. varsa alt ve üstü ezer)
+            // 2. AŞAMA: FULL BODY (Elbise) - Agresif Pantolon Silme ve Kol Koruma Promptu! | Completely cover and replace any existing pants ->  Mevcut pantolonu tamamen kapa ve değiştir
             // Eğer FASHN modelini (fal-ai/fashn) kullansaydık kategoriyi dresses yerine one-pieces yapmalıydık
-            currentPersonImage = processGarmentCategory(garments, "FULL BODY", currentPersonImage, "dresses", "A long full body dress covering the legs, completely hiding and replacing any pants");
+            currentPersonImage = processGarmentCategory(garments, "FULL BODY", currentPersonImage, "dresses",
+                    "The exact full body dress shown in the reference garment image. Strictly preserve the original sleeve length (if sleeveless, keep it sleeveless) and neckline. Completely cover and replace any existing pants or trousers on the person's legs.");
 
             // 3. AŞAMA: TOPS (Üst Giyim - Eğer Full Body yoksa)
             boolean hasFullBody = garments.stream().anyMatch(g -> "FULL BODY".equalsIgnoreCase(g.getCategory()));
             if (!hasFullBody) {
-                currentPersonImage = processGarmentCategory(garments, "TOPS", currentPersonImage, "upper_body", "A stylish top, shirt or t-shirt");
+                currentPersonImage = processGarmentCategory(garments, "TOPS", currentPersonImage, "upper_body",
+                        "The exact top shown in the reference garment image. Strictly preserve the original sleeve length and neckline. Do not add sleeves if the garment is sleeveless.");
             }
 
             // 4. AŞAMA: OUTERWEAR (Ceket/Mont - Katmanlama)
             //  Ceket giydirirken prompta "open jacket" yazıyoruz ki içindekini silmesin!
-            currentPersonImage = processGarmentCategory(garments, "OUTERWEAR", currentPersonImage, "upper_body", "An open jacket or coat worn over the clothes");
+            currentPersonImage = processGarmentCategory(garments, "OUTERWEAR", currentPersonImage, "upper_body",
+                    "An open jacket or coat worn over the existing clothes. Preserve the exact design, collar, and sleeve length of the reference outerwear.");
 
             //  TÜM ZİNCİRLEME BİTTİ! FİNAL RESMİ TELEFONA YOLLA
             taskTracker.completeTask(taskId, currentPersonImage);
