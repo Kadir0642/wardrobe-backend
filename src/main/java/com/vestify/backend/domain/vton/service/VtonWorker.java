@@ -39,7 +39,7 @@ public class VtonWorker {
         String taskId = message.getRequestId();
         
         System.out.println("=====================================================");
-        System.out.println("🚀 [MULTI-GARMENT PIPELINE w/ ROUTING] İŞLEM BAŞLADI: " + taskId);
+        System.out.println(" [MULTI-GARMENT PIPELINE w/ ROUTING] İŞLEM BAŞLADI: " + taskId);
 
         String currentPersonImage = message.getPersonImageUrl();
         List<VtonTaskMessage.GarmentItemMessage> garments = message.getGarments();
@@ -54,27 +54,32 @@ public class VtonWorker {
             // Akıllı Atlamalar: Eğer kullanıcı sadece Pantolon seçtiyse,
             // Üst ve Ceket adımları otomatik atlanır (garmentToWear == null),
             // AI'a boşuna para ve saniye ödemeyiz!            
-            
-            // 1. AŞAMA: BOTTOMS (Alt Giyim -> IDM-VTON)
-            currentPersonImage = processGarmentCategory(garments, "BOTTOMS", currentPersonImage, "lower_body", 
-                "The exact bottoms shown in the reference image. Strictly preserve the original length, fit, and design. Do not alter the style.");
-            
-            // 2. AŞAMA: FULL BODY (Elbise -> FASHN) 
-            //"dresses" kategorisi için fashn modelinde kategori "one-pieces" olmalı!
-            currentPersonImage = processGarmentCategory(garments, "FULL BODY", currentPersonImage, "one-pieces", 
-                "The exact full body dress shown in the reference garment image. Strictly preserve the original sleeve length (if sleeveless, keep it sleeveless) and neckline. Completely cover and replace any existing pants or trousers on the person's legs.");
-            
-            // 3. AŞAMA: TOPS (Üst Giyim -> IDM-VTON)
+
+            // 1. AŞAMA: TOPS (Üst Giyim -> IDM-VTON)
+            // STRATEJİ DEĞİŞİKLİĞİ: Önce TOPS giydirilir ki, BOTTOMS (Pantolon) onun üstüne/altına daha iyi otursun!
             boolean hasFullBody = garments.stream().anyMatch(g -> "FULL BODY".equalsIgnoreCase(g.getCategory()));
             if (!hasFullBody) {
-                currentPersonImage = processGarmentCategory(garments, "TOPS", currentPersonImage, "upper_body", 
-                    "The exact top shown in the reference garment image. Strictly preserve the original sleeve length and neckline. Do not add sleeves if the garment is sleeveless.");
+                currentPersonImage = processGarmentCategory(garments, "TOPS", currentPersonImage, "upper_body",
+                        "The exact top shown in the reference garment image. Strictly preserve the original sleeve length and neckline. Do not add sleeves if the garment is sleeveless.",
+                        "long sleeves, extra fabric, disfigured arms, bad skin"); // NEGATİF PROMPT);
             }
+
+            // 2. AŞAMA: BOTTOMS (Alt Giyim -> IDM-VTON)
+            currentPersonImage = processGarmentCategory(garments, "BOTTOMS", currentPersonImage, "lower_body", 
+                "The exact bottoms shown in the reference image. Strictly preserve the original length, fit, and design. Do not alter the style.",
+                       "changing the shirt, naked top, bad anatomy"); //  NEGATİF PROMPT
+            
+            // 3. AŞAMA: FULL BODY (Elbise -> FASHN)
+            //"dresses" kategorisi için fashn modelinde kategori "one-pieces" olmalı!
+            currentPersonImage = processGarmentCategory(garments, "FULL BODY", currentPersonImage, "one-pieces", 
+                "The exact full body dress shown in the reference garment image. Strictly preserve the original sleeve length (if sleeveless, keep it sleeveless) and neckline. Completely cover and replace any existing pants or trousers on the person's legs. Perfectly render bare skin where fabric is missing.",
+                       "long sleeves, extra fabric on arms, pants, trousers, bad skin generation, disfigured anatomy");
             
             // 4. AŞAMA: OUTERWEAR (Dış Giyim -> IDM-VTON)
             //  Ceket giydirirken prompta "open jacket" yazıyoruz ki içindekini silmesin!
             currentPersonImage = processGarmentCategory(garments, "OUTERWEAR", currentPersonImage, "upper_body", 
-                "An open jacket or coat worn over the existing clothes. Preserve the exact design, collar, and sleeve length of the reference outerwear.");
+                "An open jacket or coat worn over the existing clothes. Preserve the exact design, collar, and sleeve length of the reference outerwear. Preserve the clothes underneath exactly.",
+                    "closed jacket, erasing undergarment, merged fabrics");
 
             // TÜM ZİNCİRLEME BİTTİ! FİNAL RESMİ TELEFONA YOLLA
             taskTracker.completeTask(taskId, currentPersonImage);
@@ -91,9 +96,9 @@ public class VtonWorker {
     }
 
     /**
-     * 🚀 Helper Metot: Belirli bir kategorideki kıyafeti bulur, modeli seçer ve şemasını (schema) ayarlar.
+     *  Helper Metot: Belirli bir kategorideki kıyafeti bulur, modeli seçer ve şemasını (schema) ayarlar.
      */
-    private String processGarmentCategory(List<VtonTaskMessage.GarmentItemMessage> garments, String categoryName, String currentPersonImage, String aiCategory, String prompt) {
+    private String processGarmentCategory(List<VtonTaskMessage.GarmentItemMessage> garments, String categoryName, String currentPersonImage, String aiCategory, String prompt, String negativePrompt) {
 
         // Bu kategoride giyilecek bir kıyafet var mı diye bakıyoruz
         VtonTaskMessage.GarmentItemMessage garmentToWear = garments.stream()
@@ -113,11 +118,13 @@ public class VtonWorker {
         // Fal.ai API İsteği Hazırlığı (JSON Body)
         Map<String, Object> requestBody = new HashMap<>();
         
-        // 🚀 MODEL BAZLI ŞEMA AYARLAMASI (Büyük Sorunu Çözen Kısım)
+        // MODEL BAZLI ŞEMA AYARLAMASI (Büyük Sorunu Çözen Kısım)
+        // Fashn'in istediği özel model_image formatını ayırlandı ve IDM-VTON'un description formatını bozmadan ikisini tek bir metotta erittik
         if (targetEndpoint.equals(ENDPOINT_FASHN)) {
              // FASHN Modeli Parametreleri
              requestBody.put("model_image", currentPersonImage);  // Mankenin o anki hali
              requestBody.put("garment_image", garmentToWear.getUrl());  // Giydirilecek kıyafet
+            requestBody.put("negative_prompt", negativePrompt); // FASHN için Negatif
              requestBody.put("category", aiCategory); // "one-pieces" olarak gelecek
              requestBody.put("nsfw_filter", false); // Bazen dekolteleri engellememesi için
         } else {
@@ -125,7 +132,8 @@ public class VtonWorker {
              requestBody.put("human_image_url", currentPersonImage); 
              requestBody.put("garment_image_url", garmentToWear.getUrl()); 
              requestBody.put("category", aiCategory);
-             requestBody.put("description", prompt); 
+             requestBody.put("description", prompt);
+             requestBody.put("negative_prompt", negativePrompt); // IDM-VTON için Negatif
              requestBody.put("num_inference_steps", 25);  //FİNOPS: Turbo modellere geçene kadar şimdilik 25 step ile kalite/hız dengesi kuralım
         }
 
