@@ -25,8 +25,14 @@ public class VtonWorker {
     private String falAiApiKey;
 
     // DİNAMİK YÖNLENDİRME (ROUTING) İÇİN ENDPOINT'LER
+
+    // Tişörtleri, kazakları, ceketleri (TOPS, OUTERWEAR) hala IDM-VTON giydiriyor çünkü onda çok başarılı.
+    //Elbiseleri (FULL BODY) ve Pantolon/Etekleri (BOTTOMS) artık FASHN giydiriyor çünkü vücut haritalamada (bacakları bulmada) o çok daha zeki.
+
     private final String ENDPOINT_IDM_VTON = "https://fal.run/fal-ai/idm-vton";
     private final String ENDPOINT_FASHN = "https://fal.run/fal-ai/fashn/tryon/v1.5"; // Fashn v1.5 API Endpoint'i
+
+
 
     public VtonWorker(VtonTaskTracker taskTracker) {
         this.taskTracker = taskTracker;
@@ -43,6 +49,8 @@ public class VtonWorker {
 
         String currentPersonImage = message.getPersonImageUrl();
         List<VtonTaskMessage.GarmentItemMessage> garments = message.getGarments();
+
+        System.out.println("📦 KONTROL: Kuyruktan Gelen Kıyafetler -> " + garments); // Data tracing için
 
         try {
             //  STRATEJİ: Kıyafetleri Doğru Sırayla Giydirmek!
@@ -64,10 +72,10 @@ public class VtonWorker {
                         "long sleeves, extra fabric, disfigured arms, bad skin"); // NEGATİF PROMPT);
             }
 
-            // 2. AŞAMA: BOTTOMS (Alt Giyim -> IDM-VTON)
-            currentPersonImage = processGarmentCategory(garments, "BOTTOMS", currentPersonImage, "lower_body", 
+            // 2. AŞAMA: BOTTOMS (Alt Giyim -> FASHN)
+            currentPersonImage = processGarmentCategory(garments, "BOTTOMS", currentPersonImage, "bottoms",
                 "The exact bottoms shown in the reference image. Strictly preserve the original length, fit, and design. Do not alter the style.",
-                       "changing the shirt, naked top, bad anatomy"); //  NEGATİF PROMPT
+                       "changing the shirt, naked top, bad anatomy, merging fabrics"); //  NEGATİF PROMPT
             
             // 3. AŞAMA: FULL BODY (Elbise -> FASHN)
             //"dresses" kategorisi için fashn modelinde kategori "one-pieces" olmalı!
@@ -111,9 +119,11 @@ public class VtonWorker {
         }
 
         // DİNAMİK MODEL SEÇİMİ (DYNAMIC ROUTING)
-        String targetEndpoint = categoryName.equals("FULL BODY") ? ENDPOINT_FASHN : ENDPOINT_IDM_VTON;
+        // ARTIK HEM ELBİSELER HEM DE PANTOLONLAR FASHN MODELİNE GİDİYOR!
+        boolean useFashn = categoryName.equals("FULL BODY") || categoryName.equals("BOTTOMS");
+        String targetEndpoint = useFashn ? ENDPOINT_FASHN : ENDPOINT_IDM_VTON;
 
-        System.out.println("⏳ " + categoryName + " Giydiriliyor... Model: " + (categoryName.equals("FULL BODY") ? "FASHN" : "IDM-VTON"));
+        System.out.println("⏳ " + categoryName + " Giydiriliyor... Model: " + (useFashn ? "FASHN" : "IDM-VTON"));
 
         // Fal.ai API İsteği Hazırlığı (JSON Body)
         Map<String, Object> requestBody = new HashMap<>();
