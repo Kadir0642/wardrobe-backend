@@ -2,6 +2,7 @@ package com.vestify.backend.domain.vton.service;
 
 import com.vestify.backend.core.config.RabbitMQConfig;
 import com.vestify.backend.domain.vton.dto.VtonTaskMessage;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -15,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j // loglama işlemleri için
 @Service
 public class VtonWorker {
 
@@ -43,9 +45,8 @@ public class VtonWorker {
     @RabbitListener(queues = RabbitMQConfig.VTON_QUEUE)
     public void processVtonTask(VtonTaskMessage message) {
         String taskId = message.getRequestId();
-        
-        System.out.println("=====================================================");
-        System.out.println(" [MULTI-GARMENT PIPELINE w/ ROUTING] İŞLEM BAŞLADI: " + taskId);
+
+        log.info(" [MULTI-GARMENT PIPELINE w/ ROUTING] İŞLEM BAŞLADI: {}", taskId);
 
         String currentPersonImage = message.getPersonImageUrl();
         List<VtonTaskMessage.GarmentItemMessage> garments = message.getGarments();
@@ -156,7 +157,8 @@ public class VtonWorker {
                 .retrieve()
                 .bodyToMono(Map.class)
                 .timeout(Duration.ofSeconds(165))  // Her bir kıyafet için bekleme süresi
-                .block(); 
+                .retryWhen(reactor.util.retry.Retry.backoff(3, Duration.ofSeconds(2))) // 3 kez yeniden dener! | WebClient ile Fal.ai'ye istek atıyoruz
+                .block(); // Fal.ai sunucularında anlık bir ağ dalgalanması olursa (502 Bad Gateway veya 504 Timeout) olursa retry yaparak başarı oranını arttırsın.
 
         if (response != null && (response.containsKey("image") || response.containsKey("images"))) {
             // FASHN modeli bazen "images" isimli bir liste (array) dönebilir. Bunu da kontrol altına alıyoruz.
