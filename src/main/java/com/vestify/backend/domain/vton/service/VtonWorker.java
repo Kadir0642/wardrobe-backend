@@ -54,6 +54,8 @@ public class VtonWorker {
         System.out.println("📦 KONTROL: Kuyruktan Gelen Kıyafetler -> " + garments); // Data tracing için
 
         try {
+
+            // [ --- DEĞİŞTİRİLDİ --- ]
             //  STRATEJİ: Kıyafetleri Doğru Sırayla Giydirmek!
             // --- Önce Alt, Sonra Üst (veya Elbise), En Son Ceket. ---
             // 1. Önce Alt Giyim (BOTTOMS)
@@ -71,24 +73,36 @@ public class VtonWorker {
                 currentPersonImage = processGarmentCategory(garments, "TOPS", currentPersonImage, "upper_body",
                         "The exact top shown in the reference garment image. Strictly preserve the original sleeve length and neckline. Do not add sleeves if the garment is sleeveless.",
                         "long sleeves, extra fabric, disfigured arms, bad skin"); // NEGATİF PROMPT);
+                // prompt -> Referans giysi görselinde gösterilen üst kısmın aynısını kullanın. Orijinal kol uzunluğunu ve yaka çizgisini kesinlikle koruyun. Giysi kolsuz ise kol eklemeyin
+                // negative prompt-> uzun kollu, fazla kumaş, şekil bozukluğu olan kollar, kötü cilt
             }
 
             // 2. AŞAMA: BOTTOMS (Alt Giyim -> FASHN)
             currentPersonImage = processGarmentCategory(garments, "BOTTOMS", currentPersonImage, "bottoms",
                 "The exact bottoms shown in the reference image. Strictly preserve the original length, fit, and design. Do not alter the style.",
                        "changing the shirt, naked top, bad anatomy, merging fabrics"); //  NEGATİF PROMPT
+
+            // prompt -> Referans görselde gösterilen alt giyim ürünlerinin aynısı. Orijinal uzunluğu, kesimi ve tasarımı kesinlikle koruyun. Stili değiştirmeyin.
+            // negative prompt -> Gömleği değiştirmek, açık üst, kötü anatomi, kumaşları birleştirmek
             
             // 3. AŞAMA: FULL BODY (Elbise -> FASHN)
             //"dresses" kategorisi için fashn modelinde kategori "one-pieces" olmalı!
             currentPersonImage = processGarmentCategory(garments, "FULL BODY", currentPersonImage, "one-pieces", 
                 "The exact full body dress shown in the reference garment image. Strictly preserve the original sleeve length (if sleeveless, keep it sleeveless) and neckline. Completely cover and replace any existing pants or trousers on the person's legs. Perfectly render bare skin where fabric is missing.",
                        "long sleeves, extra fabric on arms, pants, trousers, bad skin generation, disfigured anatomy");
-            
+
+            // prompt -> Referans giysi görselinde gösterilen tam vücut elbisesinin birebir aynısı. Orijinal kol uzunluğunu (kolsuz ise kolsuz olarak bırakın) ve yaka çizgisini kesinlikle koruyun.
+            //          Kişinin bacaklarındaki mevcut pantolon veya eşofmanları tamamen örtün ve değiştirin. Kumaşın eksik olduğu yerlerdeki çıplak teni mükemmel bir şekilde yansıtın.
+            // negative prompt -> uzun kollu, kollarda fazla kumaş, pantolon, kötü cilt oluşumu, şekil bozukluğuna neden olan anatomik kusurlar
+
             // 4. AŞAMA: OUTERWEAR (Dış Giyim -> IDM-VTON)
             //  Ceket giydirirken prompta "open jacket" yazıyoruz ki içindekini silmesin!
             currentPersonImage = processGarmentCategory(garments, "OUTERWEAR", currentPersonImage, "upper_body", 
                 "An open jacket or coat worn over the existing clothes. Preserve the exact design, collar, and sleeve length of the reference outerwear. Preserve the clothes underneath exactly.",
                     "closed jacket, erasing undergarment, merged fabrics");
+
+            // prompt -> Mevcut kıyafetlerin üzerine giyilen açık bir ceket veya palto. Referans alınan dış giysinin tasarımını, yakasını ve kol uzunluğunu birebir koruyun. Alttaki kıyafetleri de aynen koruyun.
+            // negative prompt -> kapalı ceket, iç çamaşırının çıkarılması, birleştirilmiş kumaşlar
 
             // TÜM ZİNCİRLEME BİTTİ! FİNAL RESMİ TELEFONA YOLLA
             taskTracker.completeTask(taskId, currentPersonImage);
