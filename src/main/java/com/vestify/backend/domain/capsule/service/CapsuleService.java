@@ -29,9 +29,9 @@ public class CapsuleService {
     @Value("${gemini.api-key}")
     private String geminiApiKey;
 
-    public CapsuleService(ObjectMapper objectMapper) {
+    public CapsuleService() { // Kendi object mapper nesnemizi oluşturuyoruz.
         this.webClient = WebClient.builder().build();
-        this.objectMapper = objectMapper;
+        this.objectMapper = new ObjectMapper(); 
     }
 
     public CapsuleResponse generateSmartCapsule(CapsuleRequest request) {
