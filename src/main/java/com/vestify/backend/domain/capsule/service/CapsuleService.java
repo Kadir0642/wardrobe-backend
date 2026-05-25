@@ -52,20 +52,32 @@ public class CapsuleService {
         String partnerCatalogJson = getPartnerCatalogMock();
 
         String prompt = String.format(
-                "You are 'Vestify AI', an elite personal stylist and smart commerce assistant. " +
-                        "Your goal is to curate a travel or event capsule wardrobe.\n\n" +
+                "You are 'Vestify AI', an elite personal stylist. " +
+                        "The user is going on a trip.\n\n" +
                         "CONTEXT:\n" +
-                        "Mode: %s, Target: %s, Date: %s, Purpose: %s, Weather: %s.\n\n" +
-                        "USER'S WARDROBE (Available items):\n%s\n\n" +
-                        "PARTNER CATALOG (Upsell items):\n%s\n\n" +
-                        "RULES:\n" +
-                        "1. Create exactly 3 distinct outfits for this context.\n" +
-                        "2. For each outfit, select 2 to 4 item IDs strictly from the USER'S WARDROBE list. DO NOT invent, guess, or hallucinate IDs that are not in the list.\n" +
-                        "3. For EVERY outfit, select EXACTLY ONE matching item ID from the PARTNER CATALOG.\n" +
-                        "4. CRITICAL RULE (NO DUPLICATES): The partner item MUST NOT conflict with the categories of the selected user items. If the user's outfit already contains shoes, DO NOT suggest partner shoes. The partner item must fill a logical gap (e.g., adding Outerwear, an Accessory, or a missing top/bottom).\n" +
-                        "5. Write a 1-sentence 'stylistPitch' in Turkish explaining why this partner item perfectly completes the look and fills the missing gap.\n" +
-                        "6. OUTPUT ONLY VALID JSON. Do not use Markdown formatting. Just the raw JSON object matching this schema:\n" +
-                        "{\n  \"capsuleTitle\": \"string\",\n  \"outfits\": [\n    {\n      \"outfitName\": \"string\",\n      \"userItems\": [\"string\"],\n      \"partnerUpsellItem\": \"string\",\n      \"stylistPitch\": \"string\"\n    }\n  ]\n}",
+                        "Mode: %s, Target: %s, Dates: %s, Purpose: %s, Weather: %s.\n\n" +
+                        "USER'S WARDROBE:\n%s\n\n" +
+                        "PARTNER CATALOG:\n%s\n\n" +
+                        "CRITICAL INSTRUCTIONS (READ CAREFULLY):\n" +
+                        "Phase 1 - The Core Capsule:\n" +
+                        "First, analyze the trip duration from the 'Dates'. Create a 'Core Capsule' by selecting a realistic number of items from the USER'S WARDROBE (e.g., for a 5-day trip, select ~10 items total). Do NOT invent IDs.\n\n" +
+                        "Phase 2 - The Outfits & Upsell:\n" +
+                        "Create EXACTLY 3 distinct outfits. IMPORTANT: You must ONLY use items selected in Phase 1 for these outfits.\n" +
+                        "For EACH outfit, add exactly ONE matching item from the PARTNER CATALOG to fill a logical gap (e.g., if the outfit needs a jacket, upsell a jacket. Never upsell shoes if the outfit already has shoes).\n" +
+                        "Write a 1-sentence 'stylistPitch' in Turkish explaining why this partner item elevates the look.\n\n" +
+                        "JSON OUTPUT SCHEMA (STRICTLY ADHERE):\n" +
+                        "{\n" +
+                        "  \"capsuleTitle\": \"string\",\n" +
+                        "  \"coreCapsuleItemIds\": [\"string\"],\n" +
+                        "  \"outfits\": [\n" +
+                        "    {\n" +
+                        "      \"outfitName\": \"string\",\n" +
+                        "      \"userItems\": [\"string\"],\n" +
+                        "      \"partnerUpsellItem\": \"string\",\n" +
+                        "      \"stylistPitch\": \"string\"\n" +
+                        "    }\n" +
+                        "  ]\n" +
+                        "}",
                 request.getMode(), request.getTarget(), request.getDate(), request.getTripPurpose(), request.getTemperature(), userWardrobeJson, partnerCatalogJson
         );
 
