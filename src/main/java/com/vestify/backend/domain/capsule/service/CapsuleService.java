@@ -114,7 +114,7 @@ public class CapsuleService {
                                     })
                     )
                     .bodyToMono(Map.class)
-                    .timeout(Duration.ofSeconds(30))
+                    .timeout(Duration.ofSeconds(90)) // Kapsamlı bir AI analizi için  süreyi uzattık
                     .block();
 
             if (response != null && response.containsKey("candidates")) {
