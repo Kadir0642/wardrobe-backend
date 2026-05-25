@@ -122,7 +122,7 @@ public class CapsuleService {
     private String getUserWardrobeFromDatabase(Long userId) {
         try {
             // Repodan silinmemiş (ARCHIVED veya DELETED olmayan), aktif kıyafetleri çekiyoruz
-            List<ClothingItem> items = clothingItemRepository.findByUserIdAndStatusNot(userId, ItemStatus.ARCHIVED); // Veya DELETED, enum yapına göre
+            List<ClothingItem> items = clothingItemRepository.findByUserIdAndStatusNot(userId, ItemStatus.DELETED); // Veya DELETED, enum yapına göre
 
             // Performans Optimizasyonu: Yapay zekanın sadece bilmesi gereken alanları seçiyoruz.
             // Bütün entity'i versek JSON şişer ve API token sınırı aşılır.
