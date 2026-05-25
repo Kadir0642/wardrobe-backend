@@ -61,9 +61,16 @@ public class OutfitSuggestionService {
 
             // 1. Rastgele Kombini Oluştur (YENİ DİNAMİK LİSTEYE GÖRE)
             for (String category : selectedCategories) {
+
+                // Gelen kategorideki alt tireleri boşluğa çevir ve iki tarafı da temizle
+                String normalizedCategory = category.trim().replace("_", " ");
+
                 // Gönderilen kategoriye uyan ve daha önce bu kombinasyon için seçilmemiş kıyafetleri bul
                 List<ClothingItem> matchingItems = userWardrobe.stream()
-                        .filter(item -> category.trim().equalsIgnoreCase(item.getCategory()) && !usedIdsInCurrentOutfit.contains(item.getId()))
+                        .filter(item -> {
+                            String dbCategory = item.getCategory() != null ? item.getCategory().trim().replace("_", " ") : "";
+                            return normalizedCategory.equalsIgnoreCase(dbCategory) && !usedIdsInCurrentOutfit.contains(item.getId());
+                        })
                         .collect(Collectors.toList());
 
                 // Eğer o kategoriye uygun kıyafet dolapta varsa, rastgele birini çek
