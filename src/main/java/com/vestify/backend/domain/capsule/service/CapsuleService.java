@@ -62,8 +62,9 @@ public class CapsuleService {
                         "1. Create exactly 3 distinct outfits for this context.\n" +
                         "2. For each outfit, select 2 to 4 item IDs strictly from the USER'S WARDROBE.\n" +
                         "3. For EVERY outfit, select EXACTLY ONE matching item ID from the PARTNER CATALOG.\n" +
-                        "4. Write a 1-sentence 'stylistPitch' in Turkish explaining why this partner item completes the look.\n" +
-                        "5. OUTPUT ONLY VALID JSON. Do not use Markdown formatting. Just the raw JSON object matching this schema:\n" +
+                        "4. CRITICAL RULE (NO DUPLICATES): The partner item MUST NOT conflict with the categories of the selected user items. If the user's outfit already contains shoes, DO NOT suggest partner shoes. The partner item must fill a logical gap (e.g., adding Outerwear, an Accessory, or a missing top/bottom).\n" +
+                        "5. Write a 1-sentence 'stylistPitch' in Turkish explaining why this partner item perfectly completes the look and fills the missing gap.\n" +
+                        "6. OUTPUT ONLY VALID JSON. Do not use Markdown formatting. Just the raw JSON object matching this schema:\n" +
                         "{\n  \"capsuleTitle\": \"string\",\n  \"outfits\": [\n    {\n      \"outfitName\": \"string\",\n      \"userItems\": [\"string\"],\n      \"partnerUpsellItem\": \"string\",\n      \"stylistPitch\": \"string\"\n    }\n  ]\n}",
                 request.getMode(), request.getTarget(), request.getDate(), request.getTripPurpose(), request.getTemperature(), userWardrobeJson, partnerCatalogJson
         );
