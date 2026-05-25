@@ -122,6 +122,7 @@ public class CapsuleService {
     private String getUserWardrobeFromDatabase(Long userId) {
         try {
             // Repodan silinmemiş (ARCHIVED veya DELETED olmayan), aktif kıyafetleri çekiyoruz
+            // Şuan içinde soft Delete attıklarımızı çekmiyoruz
             List<ClothingItem> items = clothingItemRepository.findByUserIdAndStatusNot(userId, ItemStatus.DELETED); // Veya DELETED, enum yapına göre
 
             // Performans Optimizasyonu: Yapay zekanın sadece bilmesi gereken alanları seçiyoruz.
