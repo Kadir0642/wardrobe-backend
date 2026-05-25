@@ -51,19 +51,22 @@ public class CapsuleService {
         String userWardrobeJson = getUserWardrobeFromDatabase(userIdAsLong);
         String partnerCatalogJson = getPartnerCatalogMock();
 
+        // Güvenlik önlemi (Eğer Frontend'den days gelmezse veya 0 gelirse varsayılan 3 yap)
+        int outfitCount = (request.getDays() != null && request.getDays() > 0) ? request.getDays() : 3;
+
         String prompt = String.format(
                 "You are 'Vestify AI', an elite personal stylist. " +
                         "The user is going on a trip.\n\n" +
                         "CONTEXT:\n" +
-                        "Mode: %s, Target: %s, Dates: %s, Purpose: %s, Weather: %s.\n\n" +
+                        "Mode: %s, Target: %s, Dates: %s, Duration: %d days, Purpose: %s, Weather: %s.\n\n" +
                         "USER'S WARDROBE:\n%s\n\n" +
                         "PARTNER CATALOG:\n%s\n\n" +
                         "CRITICAL INSTRUCTIONS (READ CAREFULLY):\n" +
                         "Phase 1 - The Core Capsule:\n" +
-                        "First, analyze the trip duration from the 'Dates'. Create a 'Core Capsule' by selecting a realistic number of items from the USER'S WARDROBE (e.g., for a 5-day trip, select ~10 items total). Do NOT invent IDs.\n\n" +
+                        "First, analyze the trip duration (%d days). Create a 'Core Capsule' by selecting a realistic number of items from the USER'S WARDROBE. Do NOT invent IDs.\n\n" +
                         "Phase 2 - The Outfits & Upsell:\n" +
-                        "Create EXACTLY 3 distinct outfits. IMPORTANT: You must ONLY use items selected in Phase 1 for these outfits.\n" +
-                        "For EACH outfit, add exactly ONE matching item from the PARTNER CATALOG to fill a logical gap (e.g., if the outfit needs a jacket, upsell a jacket. Never upsell shoes if the outfit already has shoes).\n" +
+                        "Create EXACTLY %d distinct outfits (one for each day). IMPORTANT: You must ONLY use items selected in Phase 1 for these outfits.\n" +
+                        "For EACH outfit, add exactly ONE matching item from the PARTNER CATALOG to fill a logical gap.\n" +
                         "Write a 1-sentence 'stylistPitch' in Turkish explaining why this partner item elevates the look.\n\n" +
                         "JSON OUTPUT SCHEMA (STRICTLY ADHERE):\n" +
                         "{\n" +
@@ -78,7 +81,8 @@ public class CapsuleService {
                         "    }\n" +
                         "  ]\n" +
                         "}",
-                request.getMode(), request.getTarget(), request.getDate(), request.getTripPurpose(), request.getTemperature(), userWardrobeJson, partnerCatalogJson
+                // outfitCount parametresini formata ekledik
+                request.getMode(), request.getTarget(), request.getDate(), outfitCount, request.getTripPurpose(), request.getTemperature(), userWardrobeJson, partnerCatalogJson, outfitCount, outfitCount
         );
 
         Map<String, Object> requestBody = new HashMap<>();

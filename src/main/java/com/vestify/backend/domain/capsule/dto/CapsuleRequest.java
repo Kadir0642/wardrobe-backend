@@ -10,4 +10,5 @@ public class CapsuleRequest { // mobil uygulamanın bize göndereceği istek pak
     private String date;        // "Nov 12 - Nov 16"
     private String temperature; // Mobilin Open-Meteo'dan çektiği derece (Örn: "12°C")
     private String tripPurpose; // "Leisure" veya "Business"
+    private Integer days; // Frontend'den gelen gün sayısı
 }
