@@ -10,22 +10,23 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/v1/outfits/suggest") // Bu adrese yapılan istekler doğrudan AI motorunu çalıştırır.
+@RequestMapping("/api/v1/outfits/suggest")
 @RequiredArgsConstructor
-public class OutfitSuggestionController { // Akıllı Öneri Kapısı
+public class OutfitSuggestionController {
 
     private final OutfitSuggestionService suggestionService;
 
     @GetMapping
     public ResponseEntity<List<ClothingItemDto>> getSuggestion(
-            @RequestParam Long userId, // Önceki controller'larda URL içinden (@PathVariable) veri alıyorduk. Burada ise sorgu parametrelerini kullanıyoruz.
-            @RequestParam(defaultValue = "0") int blueprintIndex,
+            @RequestParam Long userId,
+            // 🚀 DÜZELTME: Artık blueprintIndex yerine React Native'den gelen kategorileri (Örn: TOPS,FULL_BODY) alıyoruz
+            @RequestParam(required = false) String categories,
             @RequestParam(defaultValue = "Bilinmiyor") String weatherContext) {
 
-        // Servisten gelen Entity listesini alıyoruz
-        var suggestion = suggestionService.generateSuggestion(userId, blueprintIndex, weatherContext);
+        // Kategorileri Service'e iletiyoruz
+        var suggestion = suggestionService.generateSuggestion(userId, categories, weatherContext);
 
-        // MİMARİ KURAL: Dışarıya DTO dönüyoruz. Gereksiz verileri gizliyoruz.
+        // MİMARİ KURAL: Dışarıya DTO dönüyoruz.
         List<ClothingItemDto> responseDtos = suggestion.stream()
                 .map(item -> ClothingItemDto.builder()
                         .id(item.getId())
