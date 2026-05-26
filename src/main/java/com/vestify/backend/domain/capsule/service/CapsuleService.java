@@ -125,19 +125,26 @@ public class CapsuleService {
         }
     }
 
-    // --- PROMPT MÜHENDİSLİĞİ (MODE BAĞIMLI) ---
+    // --- PROMPT MÜHENDİSLİĞİ (MODE BAĞIMLI & HALÜSİNASYON ENGELLEYİCİ) ---
     private String buildMasterStylistPrompt(String mode, String context, String weatherContext, int outfitCount, String wardrobeJson, String partnerJson) {
         StringBuilder sb = new StringBuilder();
         sb.append("You are 'Vestify AI', an elite personal fashion stylist and architect of luxury aesthetics.\n\n");
         sb.append("USER CONTEXT: ").append(context).append("\n");
         sb.append("WEATHER CONTEXT: ").append(weatherContext).append("\n\n");
-        sb.append("USER'S WARDROBE:\n").append(wardrobeJson).append("\n\n");
+
+        // 🚀 DÜZELTME 1: Yapay zekaya bunun "Kullanılabilir Tek Kaynak" olduğunu vurguluyoruz.
+        sb.append("USER'S WARDROBE (ONLY AVAILABLE ITEMS):\n").append(wardrobeJson).append("\n\n");
         sb.append("PARTNER CATALOG:\n").append(partnerJson).append("\n\n");
 
+        // 🚀 DÜZELTME 2: AGRESİF KURALLAR (Halüsinasyon Önleyici)
+        sb.append("CRITICAL SYSTEM RULES (YOU MUST OBEY OR SYSTEM WILL CRASH):\n");
+        sb.append("1. STRICT ID MATCHING: You are STRICTLY FORBIDDEN from inventing, generating, or guessing clothing IDs. You MUST ONLY select the exact \"id\" strings explicitly listed in the USER'S WARDROBE JSON array above. Halucinating a non-existent ID is a fatal error.\n");
+        sb.append("2. WEATHER COMPLIANCE: Ensure ALL selected items are completely appropriate for the provided WEATHER CONTEXT.\n\n");
+
         if ("EVENT".equalsIgnoreCase(mode)) {
-            sb.append("TASK: The user is attending a specific event. Create EXACTLY 3 distinct outfit alternatives (e.g., 'Edgy', 'Classic', 'Modern') using ONLY items from the USER'S WARDROBE.\n");
+            sb.append("TASK: The user is attending a specific event. Create EXACTLY 3 distinct outfit alternatives (e.g., 'Edgy', 'Classic', 'Modern') using ONLY items from the USER'S WARDROBE.\n\n");
         } else {
-            sb.append("TASK: The user is traveling. Create a 'Core Capsule' wardrobe using realistic items from the USER'S WARDROBE. Then, create EXACTLY ").append(outfitCount).append(" distinct daily outfits using ONLY those core items.\n");
+            sb.append("TASK: The user is traveling. Create a 'Core Capsule' wardrobe using realistic items from the USER'S WARDROBE. Then, create EXACTLY ").append(outfitCount).append(" distinct daily outfits using ONLY those core items.\n\n");
         }
 
         sb.append("UPSELL STRATEGY: For EACH outfit, select exactly ONE logical missing item from the PARTNER CATALOG to elevate the look.\n");
