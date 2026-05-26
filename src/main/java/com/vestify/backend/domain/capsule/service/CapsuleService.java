@@ -94,8 +94,22 @@ public class CapsuleService {
                 List parts = (List) content.get("parts");
                 String rawJsonOutput = (String) ((Map) parts.get(0)).get("text");
 
-                log.info("✅ [VESTIFY AI] JSON Başarıyla Üretildi.");
+                log.info("✅ [VESTIFY AI] JSON Başarıyla Üretildi. Veri ayıklanıyor...");
+
+                // 1. Markdown etiketlerini temizle
                 rawJsonOutput = rawJsonOutput.replace("```json", "").replace("```", "").trim();
+
+                // 2. 🚀 SENIOR DOKUNUŞU: Baştaki ve sondaki geveze metinleri at, sadece JSON'ı al!
+                int startIndex = rawJsonOutput.indexOf('{');
+                int endIndex = rawJsonOutput.lastIndexOf('}');
+
+                if (startIndex != -1 && endIndex != -1) {
+                    rawJsonOutput = rawJsonOutput.substring(startIndex, endIndex + 1);
+                } else {
+                    throw new RuntimeException("Gemini yanıtında geçerli bir JSON bloğu bulunamadı.");
+                }
+
+                // 3. Güvenle Java objesine çevir
                 return objectMapper.readValue(rawJsonOutput, CapsuleResponse.class);
             }
 
