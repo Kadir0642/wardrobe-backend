@@ -1,18 +1,23 @@
 package com.vestify.backend.domain.capsule.dto;
 
 import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 
 @Data
-public class CapsuleResponse {  // AI'ın üreteceği nihai çıktı
+@JsonIgnoreProperties(ignoreUnknown = true) // 🚀 KURŞUN GEÇİRMEZ KALKAN: Bilinmeyen alan gelirse çökme, yoksay!
+public class CapsuleResponse {
+
     private String capsuleTitle;
-    private List<OutfitDetails> outfits;
+    private List<String> coreCapsuleItemIds; // 🚀 EKSİK OLAN VE SİSTEMİ ÇÖKERTEN ALAN EKLENDİ
+    private List<OutfitDto> outfits;
 
     @Data
-    public static class OutfitDetails {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class OutfitDto {
         private String outfitName;
-        private List<String> userItems;        // Kullanıcının dolabından seçilen Kıyafet ID'leri
-        private String partnerUpsellItem;     // (Affiliate) Mağazadan satılacak ortak marka Kıyafet ID'si | Ortaklık kurarak ürün satışı
-        private String stylistPitch;          // AI'ın lüks satış/stil cümlesi
+        private List<String> userItems;
+        private String partnerUpsellItem;
+        private String stylistPitch;
     }
 }

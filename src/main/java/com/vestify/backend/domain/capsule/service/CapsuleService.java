@@ -1,5 +1,6 @@
 package com.vestify.backend.domain.capsule.service;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vestify.backend.domain.capsule.dto.CapsuleRequest;
 import com.vestify.backend.domain.capsule.dto.CapsuleResponse;
@@ -35,7 +36,10 @@ public class CapsuleService {
 
     public CapsuleService(ClothingItemRepository clothingItemRepository) {
         this.webClient = WebClient.builder().build();
-        this.objectMapper = new ObjectMapper();
+
+        // 🚀 DÜZELTME: ObjectMapper artık bilinmeyen bir JSON alanı görünce exception fırlatmayacak
+        this.objectMapper = new ObjectMapper()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.clothingItemRepository = clothingItemRepository;
     }
 
