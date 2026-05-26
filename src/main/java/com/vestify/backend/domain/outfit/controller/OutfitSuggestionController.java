@@ -33,6 +33,7 @@ public class OutfitSuggestionController {
                         .name(item.getName())
                         .imageUrl(item.getImageUrl())
                         .category(item.getCategory())
+                        .brand(item.getBrand())
                         .costPerWear(item.getCostPerWear())
                         .build())
                 .collect(Collectors.toList());
