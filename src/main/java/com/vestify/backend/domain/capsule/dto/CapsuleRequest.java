@@ -3,12 +3,11 @@ package com.vestify.backend.domain.capsule.dto;
 import lombok.Data;
 
 @Data
-public class CapsuleRequest { // mobil uygulamanın bize göndereceği istek paketi
-    private String userId;
-    private String mode;        // "travel" veya "event"
-    private String target;      // "London" veya "Wedding"
-    private String date;        // "Nov 12 - Nov 16"
-    private String temperature; // Mobilin Open-Meteo'dan çektiği derece (Örn: "12°C")
-    private String tripPurpose; // "Leisure" veya "Business"
-    private Integer days; // Frontend'den gelen gün sayısı
+public class CapsuleRequest {
+    private Long userId;          // Doğrudan Long olarak alalım, çevirmeyle uğraşmayalım
+    private String mode;          // "TRAVEL" veya "EVENT"
+    private String magicContext;  // Sihirli Kutu'dan gelen metin (Örn: "Eski sevgilimin düğünü" veya "Bodrum Tatili")
+    private String weatherContext; //(Örn: "Sunny, 28°C" veya mobilin algıladığı hava)
+    private Integer days;         // Seyahat için gün sayısı
+    private Integer totalOutfits; // Mobilden hesaplanıp gelen üretilecek toplam kombin (days + 5)
 }
