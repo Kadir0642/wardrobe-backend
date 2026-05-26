@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vestify.backend.domain.capsule.dto.CapsuleRequest;
 import com.vestify.backend.domain.capsule.dto.CapsuleResponse;
-
 import com.vestify.backend.domain.wardrobe.entity.ClothingItem;
 import com.vestify.backend.domain.wardrobe.enums.ItemStatus;
 import com.vestify.backend.domain.wardrobe.repository.ClothingItemRepository;
@@ -36,8 +35,7 @@ public class CapsuleService {
 
     public CapsuleService(ClothingItemRepository clothingItemRepository) {
         this.webClient = WebClient.builder().build();
-
-        // 🚀 DÜZELTME: ObjectMapper artık bilinmeyen bir JSON alanı görünce exception fırlatmayacak
+        // Eksik alan gelirse çökmeyi önleyen ayar
         this.objectMapper = new ObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.clothingItemRepository = clothingItemRepository;
@@ -46,33 +44,32 @@ public class CapsuleService {
     public CapsuleResponse generateSmartCapsule(CapsuleRequest request) {
         log.info("🔮 [VESTIFY AI] Motor Başladı. Mod: {}, Context: {}", request.getMode(), request.getMagicContext());
 
-        String userWardrobeJson = getUserWardrobeFromDatabase(request.getUserId());
-        String partnerCatalogJson = fetchAffiliateCatalog(); // Mimari olarak ayrılmış sahte servis
+        // 1. Veritabanından GERÇEK kıyafetleri çekiyoruz
+        List<ClothingItem> realWardrobeItems = clothingItemRepository.findByUserIdAndStatusNot(request.getUserId(), ItemStatus.DELETED);
 
-        int requestedOutfits = (request.getTotalOutfits() != null && request.getTotalOutfits() > 0)
-                ? request.getTotalOutfits() : 3;
+        // 🚀 FIREWALL İÇİN GERÇEK ID LİSTESİ (Sadece bunlara izin var)
+        List<String> validIds = realWardrobeItems.stream()
+                .map(item -> item.getId().toString())
+                .collect(Collectors.toList());
 
-        // 🚀 DİNAMİK PROMPT MÜHENDİSLİĞİ: Mod'a göre Gemini'ye farklı emir veriyoruz
-        String prompt = buildMasterStylistPrompt(
-                request.getMode(),
-                request.getMagicContext(),
-                request.getWeatherContext(),
-                requestedOutfits,
-                userWardrobeJson,
-                partnerCatalogJson
-        );
+        // Yapay zekaya gidecek JSON'ı hazırlıyoruz
+        String userWardrobeJson = convertWardrobeToJson(realWardrobeItems);
+        String partnerCatalogJson = fetchAffiliateCatalog();
+
+        int requestedOutfits = (request.getTotalOutfits() != null && request.getTotalOutfits() > 0) ? request.getTotalOutfits() : 3;
+        String prompt = buildMasterStylistPrompt(request.getMode(), request.getMagicContext(), request.getWeatherContext(), requestedOutfits, userWardrobeJson, partnerCatalogJson);
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))));
 
         Map<String, Object> generationConfig = new HashMap<>();
-        generationConfig.put("temperature", 0.15); // Yaratıcılık düşük, keskin doğruluk yüksek
+        generationConfig.put("temperature", 0.1); // Halüsinasyonu azaltmak için iyice düşürdük
         requestBody.put("generationConfig", generationConfig);
 
         try {
             String geminiEndpoint = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=" + geminiApiKey;
 
-            Map response = webClient.post()
+            return webClient.post()
                     .uri(geminiEndpoint)
                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .bodyValue(requestBody)
@@ -85,39 +82,55 @@ public class CapsuleService {
                                     })
                     )
                     .bodyToMono(Map.class)
-                    //  Eğer Google "Meşgulum (503)" derse pes etme.
-                    // 3 saniye bekle ve maksimum 3 defa otomatik tekrar dene!
+                    // 🚀 AKILLI JSON AYIKLAYICI VE GÜVENLİK DUVARI (FIREWALL)
+                    .map(response -> {
+                        List candidates = (List) response.get("candidates");
+                        Map firstCandidate = (Map) candidates.get(0);
+                        Map content = (Map) firstCandidate.get("content");
+                        List parts = (List) content.get("parts");
+                        String rawJsonOutput = (String) ((Map) parts.get(0)).get("text");
+
+                        // Geveze AI Temizliği
+                        rawJsonOutput = rawJsonOutput.replace("```json", "").replace("```", "").trim();
+                        int startIndex = rawJsonOutput.indexOf('{');
+                        int endIndex = rawJsonOutput.lastIndexOf('}');
+
+                        if (startIndex != -1 && endIndex != -1) {
+                            rawJsonOutput = rawJsonOutput.substring(startIndex, endIndex + 1);
+                        } else {
+                            throw new RuntimeException("Gemini yanıtında geçerli JSON bulunamadı.");
+                        }
+
+                        try {
+                            CapsuleResponse parsedResponse = objectMapper.readValue(rawJsonOutput, CapsuleResponse.class);
+
+                            // 🚀 HALÜSİNASYON DEDEKTÖRÜ!
+                            // Dönen her kombindeki ID'leri gerçek dolapla karşılaştırıyoruz.
+                            if (parsedResponse.getOutfits() != null) {
+                                for (CapsuleResponse.OutfitDto outfit : parsedResponse.getOutfits()) {
+                                    if (outfit.getUserItems() != null) {
+                                        for (String aiProvidedId : outfit.getUserItems()) {
+                                            if (!validIds.contains(aiProvidedId)) {
+                                                log.warn("🚨 HALÜSİNASYON YAKALANDI! Gemini sahte ID üretti: {}. Sistem isteği yeniliyor...", aiProvidedId);
+                                                // Bu hata fırlatıldığında aşağıdaki retryWhen devreye girip süreci en baştan başlatır!
+                                                throw new RuntimeException("LLM_HALLUCINATION_DETECTED");
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            log.info("✅ [VESTIFY AI] JSON Başarıyla Üretildi ve Doğrulandı.");
+                            return parsedResponse;
+
+                        } catch (Exception e) {
+                            throw new RuntimeException("JSON Çözümleme/Doğrulama Hatası: " + e.getMessage());
+                        }
+                    })
+                    // 🚀 DİRENÇ MEKANİZMASI: Google meşgulse veya Halüsinasyon yakalandıysa 3 kez tekrar dene!
                     .retryWhen(Retry.fixedDelay(3, Duration.ofSeconds(3)))
-                    .timeout(Duration.ofSeconds(120))
+                    .timeout(Duration.ofSeconds(90))
                     .block();
-
-            if (response != null && response.containsKey("candidates")) {
-                List candidates = (List) response.get("candidates");
-                Map firstCandidate = (Map) candidates.get(0);
-                Map content = (Map) firstCandidate.get("content");
-                List parts = (List) content.get("parts");
-                String rawJsonOutput = (String) ((Map) parts.get(0)).get("text");
-
-                log.info("✅ [VESTIFY AI] JSON Başarıyla Üretildi. Veri ayıklanıyor...");
-
-                // 1. Markdown etiketlerini temizle
-                rawJsonOutput = rawJsonOutput.replace("```json", "").replace("```", "").trim();
-
-                // 2. 🚀 SENIOR DOKUNUŞU: Baştaki ve sondaki geveze metinleri at, sadece JSON'ı al!
-                int startIndex = rawJsonOutput.indexOf('{');
-                int endIndex = rawJsonOutput.lastIndexOf('}');
-
-                if (startIndex != -1 && endIndex != -1) {
-                    rawJsonOutput = rawJsonOutput.substring(startIndex, endIndex + 1);
-                } else {
-                    throw new RuntimeException("Gemini yanıtında geçerli bir JSON bloğu bulunamadı.");
-                }
-
-                // 3. Güvenle Java objesine çevir
-                return objectMapper.readValue(rawJsonOutput, CapsuleResponse.class);
-            }
-
-            throw new RuntimeException("Gemini'den geçerli bir yanıt dönmedi.");
 
         } catch (Exception e) {
             log.error("🚨 [VESTIFY AI] Sistem Hatası: {}", e.getMessage());
@@ -125,21 +138,19 @@ public class CapsuleService {
         }
     }
 
-    // --- PROMPT MÜHENDİSLİĞİ (MODE BAĞIMLI & HALÜSİNASYON ENGELLEYİCİ) ---
+    // --- PROMPT MÜHENDİSLİĞİ ---
     private String buildMasterStylistPrompt(String mode, String context, String weatherContext, int outfitCount, String wardrobeJson, String partnerJson) {
         StringBuilder sb = new StringBuilder();
         sb.append("You are 'Vestify AI', an elite personal fashion stylist and architect of luxury aesthetics.\n\n");
         sb.append("USER CONTEXT: ").append(context).append("\n");
         sb.append("WEATHER CONTEXT: ").append(weatherContext).append("\n\n");
-
-        // 🚀 DÜZELTME 1: Yapay zekaya bunun "Kullanılabilir Tek Kaynak" olduğunu vurguluyoruz.
         sb.append("USER'S WARDROBE (ONLY AVAILABLE ITEMS):\n").append(wardrobeJson).append("\n\n");
         sb.append("PARTNER CATALOG:\n").append(partnerJson).append("\n\n");
 
-        // 🚀 DÜZELTME 2: AGRESİF KURALLAR (Halüsinasyon Önleyici)
         sb.append("CRITICAL SYSTEM RULES (YOU MUST OBEY OR SYSTEM WILL CRASH):\n");
-        sb.append("1. STRICT ID MATCHING: You are STRICTLY FORBIDDEN from inventing, generating, or guessing clothing IDs. You MUST ONLY select the exact \"id\" strings explicitly listed in the USER'S WARDROBE JSON array above. Halucinating a non-existent ID is a fatal error.\n");
-        sb.append("2. WEATHER COMPLIANCE: Ensure ALL selected items are completely appropriate for the provided WEATHER CONTEXT.\n\n");
+        sb.append("1. STRICT ID MATCHING: You are STRICTLY FORBIDDEN from inventing or guessing clothing IDs. You MUST ONLY select the exact \"id\" strings explicitly listed in the USER'S WARDROBE JSON array above. Hallucinating a non-existent ID is a fatal error.\n");
+        sb.append("2. COMPROMISE: If you cannot find the perfect item, you MUST choose the closest available item from the wardrobe array. DO NOT INVENT.\n");
+        sb.append("3. WEATHER COMPLIANCE: Ensure ALL selected items are completely appropriate for the provided WEATHER CONTEXT.\n\n");
 
         if ("EVENT".equalsIgnoreCase(mode)) {
             sb.append("TASK: The user is attending a specific event. Create EXACTLY 3 distinct outfit alternatives (e.g., 'Edgy', 'Classic', 'Modern') using ONLY items from the USER'S WARDROBE.\n\n");
@@ -168,10 +179,8 @@ public class CapsuleService {
     }
 
     // --- VERİ HAZIRLAMA METOTLARI ---
-    private String getUserWardrobeFromDatabase(Long userId) {
+    private String convertWardrobeToJson(List<ClothingItem> items) {
         try {
-            List<ClothingItem> items = clothingItemRepository.findByUserIdAndStatusNot(userId, ItemStatus.DELETED);
-
             List<Map<String, Object>> optimizedList = items.stream().map(item -> {
                 Map<String, Object> map = new HashMap<>();
                 map.put("id", item.getId().toString());
@@ -200,7 +209,6 @@ public class CapsuleService {
                 Map.of("id", "pt_102", "brand", "Massimo Dutti", "name", "İpek Şal", "category", "ACCESSORIES"),
                 Map.of("id", "pt_103", "brand", "Hugo Boss", "name", "Lacivert Blazer", "category", "OUTERWEAR")
         );
-
         try {
             return objectMapper.writeValueAsString(mockExternalApiData);
         } catch (Exception e) {
