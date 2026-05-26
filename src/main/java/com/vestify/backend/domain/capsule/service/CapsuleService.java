@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -80,7 +81,10 @@ public class CapsuleService {
                                     })
                     )
                     .bodyToMono(Map.class)
-                    .timeout(Duration.ofSeconds(90))
+                    //  Eğer Google "Meşgulum (503)" derse pes etme.
+                    // 3 saniye bekle ve maksimum 3 defa otomatik tekrar dene!
+                    .retryWhen(Retry.fixedDelay(3, Duration.ofSeconds(3)))
+                    .timeout(Duration.ofSeconds(120))
                     .block();
 
             if (response != null && response.containsKey("candidates")) {
