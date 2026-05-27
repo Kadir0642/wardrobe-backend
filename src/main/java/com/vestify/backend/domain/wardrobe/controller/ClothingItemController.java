@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 // "Bean" (Spring'in yönettiği nesne)
 @RestController // Bu sınıfın bir API hizmeti sunduğunu ve cevap olarak HTML sayfası değil, saf veri (JSON) döneceğini belirtir.
-@RequestMapping("/api/v1/clothes") // Kıyafetlerle ilgili tüm işlemlerin ana adresi.
+@RequestMapping("/api/v1/clothes") // Kıyafetlerle ilgili tüm işlemlerin ana adresi. | Bu, ana yoldur.
 @RequiredArgsConstructor // dependency enjection
 public class ClothingItemController {
 
@@ -59,7 +59,7 @@ public class ClothingItemController {
     }
 
     // Örn: /api/v1/clothes/2?page=0&size=20
-    @GetMapping("/{userId}")
+    @GetMapping("/{userId}") // Kullanıcının kıyafetlerini getiren metod
     public ResponseEntity<Page<ClothingItem>> getUserWardrobe(
             @PathVariable Long userId,
             @PageableDefault(size = 20) Pageable pageable) { // Varsayılan 20 parça getir

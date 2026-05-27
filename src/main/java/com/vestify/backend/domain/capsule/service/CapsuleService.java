@@ -140,7 +140,10 @@ public class CapsuleService {
                         }
                     })
                     // 🚀 DİRENÇ MEKANİZMASI: Google meşgulse veya Halüsinasyon yakalandıysa 3 kez tekrar dene!
-                    .retryWhen(Retry.fixedDelay(3, Duration.ofSeconds(3)))
+                    .retryWhen(Retry.backoff(3, Duration.ofSeconds(5)) // İlk denemede 5sn, ikincide 10sn, üçüncüde 20sn bekle
+                            .filter(throwable -> throwable.getMessage() != null && throwable.getMessage().contains("429"))
+                            .doBeforeRetry(retrySignal -> log.warn("⚠️ [RATE LIMIT] Google kotası doldu. Üstel geri çekilme devrede. Deneme: {}", retrySignal.totalRetries() + 1))
+                    )
                     .timeout(Duration.ofSeconds(90))
                     .block();
 
