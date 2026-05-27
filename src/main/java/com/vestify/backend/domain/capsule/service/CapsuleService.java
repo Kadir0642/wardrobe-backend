@@ -52,7 +52,8 @@ public class CapsuleService {
                 .map(item -> item.getId().toString())
                 .collect(Collectors.toList());
 
-        // Yapay zekaya gidecek JSON'ı hazırlıyoruz
+        log.info("🔍 Kullanıcının Gerçek Dolap ID'leri: {}", validIds);
+
         String userWardrobeJson = convertWardrobeToJson(realWardrobeItems);
         String partnerCatalogJson = fetchAffiliateCatalog();
 
@@ -104,27 +105,34 @@ public class CapsuleService {
                         try {
                             CapsuleResponse parsedResponse = objectMapper.readValue(rawJsonOutput, CapsuleResponse.class);
 
-                            // 🚀 HALÜSİNASYON DEDEKTÖRÜ!
+                            // 🚀 SELF-HEALING FIREWALL (Kendi Kendini İyileştirme)
+                            // AI uydurma ID verdiyse hata fırlatma, sadece uydurduğu ID'leri sil!
                             // Dönen her kombindeki ID'leri gerçek dolapla karşılaştırıyoruz.
+                            if (parsedResponse.getCoreCapsuleItemIds() != null) {
+                                parsedResponse.getCoreCapsuleItemIds().removeIf(id -> {
+                                    boolean isFake = !validIds.contains(id);
+                                    if (isFake) log.warn("🚨 Halüsinasyon Temizlendi (Core): {}", id);
+                                    return isFake;
+                                });
+                            }
+
                             if (parsedResponse.getOutfits() != null) {
                                 for (CapsuleResponse.OutfitDto outfit : parsedResponse.getOutfits()) {
                                     if (outfit.getUserItems() != null) {
-                                        for (String aiProvidedId : outfit.getUserItems()) {
-                                            if (!validIds.contains(aiProvidedId)) {
-                                                log.warn("🚨 HALÜSİNASYON YAKALANDI! Gemini sahte ID üretti: {}. Sistem isteği yeniliyor...", aiProvidedId);
-                                                // Bu hata fırlatıldığında aşağıdaki retryWhen devreye girip süreci en baştan başlatır!
-                                                throw new RuntimeException("LLM_HALLUCINATION_DETECTED");
-                                            }
-                                        }
+                                        outfit.getUserItems().removeIf(id -> {
+                                            boolean isFake = !validIds.contains(id);
+                                            if (isFake) log.warn("🚨 Halüsinasyon Temizlendi (Outfit): {}", id);
+                                            return isFake;
+                                        });
                                     }
                                 }
                             }
 
-                            log.info("✅ [VESTIFY AI] JSON Başarıyla Üretildi ve Doğrulandı.");
+                            log.info("✅ [VESTIFY AI] JSON Üretildi ve Sahte ID'ler %100 Filtrelendi.");
                             return parsedResponse;
 
                         } catch (Exception e) {
-                            throw new RuntimeException("JSON Çözümleme/Doğrulama Hatası: " + e.getMessage());
+                            throw new RuntimeException("JSON Çözümleme Hatası: " + e.getMessage());
                         }
                     })
                     // 🚀 DİRENÇ MEKANİZMASI: Google meşgulse veya Halüsinasyon yakalandıysa 3 kez tekrar dene!
