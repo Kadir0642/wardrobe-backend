@@ -45,7 +45,11 @@ public class CapsuleService {
         log.info("🔮 [VESTIFY AI] Motor Başladı. Mod: {}, Context: {}", request.getMode(), request.getMagicContext());
 
         // 1. Veritabanından GERÇEK kıyafetleri çekiyoruz
-        List<ClothingItem> realWardrobeItems = clothingItemRepository.findByUserIdAndStatusNot(request.getUserId(), ItemStatus.DELETED);
+        // Sadece ve sadece kullanıcının şu an aktif olarak dolabında duran kıyafetleri getir!
+        List<ClothingItem> realWardrobeItems = clothingItemRepository.findByUserIdAndStatus(request.getUserId(), ItemStatus.WARDROBE);
+
+        // Önceki hali şilinmemiş hepsini getiriyordu.
+        // List<ClothingItem> realWardrobeItems = clothingItemRepository.findByUserIdAndStatusNot(request.getUserId(), ItemStatus.DELETED);
 
         // 🚀 FIREWALL İÇİN GERÇEK ID LİSTESİ (Sadece bunlara izin var)
         List<String> validIds = realWardrobeItems.stream()

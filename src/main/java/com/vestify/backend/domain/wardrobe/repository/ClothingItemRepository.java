@@ -25,7 +25,13 @@ public interface ClothingItemRepository extends JpaRepository<ClothingItem, Long
     Page<ClothingItem> findByUserIdAndStatusNot(Long userId, ItemStatus status, Pageable pageable);
 
     // AI'ın tüm dolabı görebilmesi için (Sayfalama olmadan, sadece silinmemişleri getir)
+    // List<ClothingItem> realWardrobeItems = clothingItemRepository.findByUserIdAndStatusNot(request.getUserId(), ItemStatus.DELETED);
     List<ClothingItem> findByUserIdAndStatusNot(Long userId, ItemStatus status);
+
+    // AI'ın gardroptakileri sadece görmesi için
+    // Sadece ve sadece kullanıcının şu an aktif olarak dolabında duran kıyafetleri getir!
+    //List<ClothingItem> realWardrobeItems = clothingItemRepository.findByUserIdAndStatus(request.getUserId(), ItemStatus.WARDROBE);
+    List<ClothingItem> findByUserIdAndStatus(Long userId, ItemStatus status);
 
     // 2. KATEGORİ SORGUSU: Çapa modeli için (Yine silinmemişleri ve sayfa sayfa)
     Page<ClothingItem> findByUserIdAndCategoryAndStatusNot(Long userId, String category, ItemStatus status, Pageable pageable);
