@@ -1,5 +1,6 @@
 package com.vestify.backend.domain.wardrobe.service;
 
+import com.vestify.backend.core.ai.service.AiIntegrationService;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.http.MediaType;
 import java.util.HashMap;
@@ -34,6 +35,7 @@ public class ClothingItemService {
 
     private final UserRepository userRepository;
     private final ClothingItemRepository clothingItemRepository;
+    private final AiIntegrationService aiIntegrationService;
 
     public ClothingItem addClothingItem(Long userId, ClothingItem item) { // Gelen kıyafeti (item), userId üzerinden bulduğu kullanıcıyla eşleştirir.
         User user = userRepository.findById(userId)
@@ -41,7 +43,13 @@ public class ClothingItemService {
         item.setUser(user);
         item.setStatus(ItemStatus.WARDROBE); // Yeni oluşturulanlar varsayılan olarak dolaptadır
         log.info("Kullanıcı {} dolabına yeni parça ekliyor: {}", user.getUserName(), item.getName());
-        return clothingItemRepository.save(item);
+
+        ClothingItem savedItem = clothingItemRepository.save(item);
+
+        // Manuel eklenen kıyafetide Vektör DNA'sına gönder!
+        aiIntegrationService.vectorizeItemAsync(userId, savedItem);
+
+        return savedItem;
     }
 
     // SAYFALAMALI VE SİLİNMİŞLERİ GİZLEYEN DOLAP GETİRME
@@ -72,10 +80,15 @@ public class ClothingItemService {
         if (updatedData.getColor() != null) existingItem.setColor(updatedData.getColor());
         if (updatedData.getSize() != null) existingItem.setSize(updatedData.getSize());
         if (updatedData.getSeason() != null) existingItem.setSeason(updatedData.getSeason());
-        
-        // 3. Güncellenmiş haliyle kaydet
-        log.info("Kıyafet güncellendi. ID: {}", itemId);
-        return clothingItemRepository.save(existingItem);
+
+        ClothingItem savedItem = clothingItemRepository.save(existingItem);
+
+        // Rengi/Tarzı değişen kıyafetin Vektör DNA'sını Python'da güncelle!
+        // (Upsert kullandığımız için aynı ID ile giderse eskisini ezip güncelleyecektir)
+        aiIntegrationService.vectorizeItemAsync(existingItem.getUser().getId(), savedItem);
+
+        log.info("Kıyafet güncellendi ve Vektör motoruna iletildi. ID: {}", itemId);
+        return savedItem;
     }
 
     // ENUM DÜZELTMELERİ YAPILMIŞ AKILLI FİLTRE
