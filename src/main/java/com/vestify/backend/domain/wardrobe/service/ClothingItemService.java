@@ -1,5 +1,8 @@
 package com.vestify.backend.domain.wardrobe.service;
 
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.http.MediaType;
+import java.util.HashMap;
 import com.vestify.backend.domain.user.entity.User;
 import com.vestify.backend.domain.user.repository.UserRepository;
 import com.vestify.backend.domain.wardrobe.entity.ClothingItem;
@@ -109,7 +112,7 @@ public class ClothingItemService {
             // 3. Veritabanına Yazılacak (Builder) Nesnesi
             return ClothingItem.builder()
                     .user(user)
-                    .name("AI Ayıklaması") // Mobilde kullanıcı burayı sonradan değiştirebilir.
+                    .name("AI Correction") // Mobilde kullanıcı burayı sonradan değiştirebilir.
                     .imageUrl((String) data.get("url"))
                     .category(category)
                     .subCategory(subCategory)
@@ -126,8 +129,48 @@ public class ClothingItemService {
                     .build();
         }).collect(Collectors.toList());
 
+        // 1. Önce kıyafetleri veritabanına kaydet (Burada Hibernate ID'leri otomatik üretecek)
+        List<ClothingItem> savedItems = clothingItemRepository.saveAll(itemsToSave);
+
+        // 2. YENİ KATMAN: Kaydedilen her bir kıyafeti vektörleştirilmesi için Python AI sunucusuna fırlat!
+        sendToPythonVectorizer(userId, savedItems);
+
         // 4. Oluşturulan listeyi veritabanına TEK SEFERDE kaydet
-        return clothingItemRepository.saveAll(itemsToSave);
+        return savedItems;
+    }
+
+    //  PYTHON VEKTÖR MOTORUNU TETİKLEYEN ASENKRON KURYE
+    private void sendToPythonVectorizer(Long userId, List<ClothingItem> savedItems) {
+        // Python FastAPI sunucumuzun adresi
+        WebClient webClient = WebClient.builder().baseUrl("http://localhost:8000").build();
+
+        for (ClothingItem item : savedItems) {
+            // Python'daki ItemVectorRequest modeline birebir uyan JSON gövdesini hazırlıyoruz
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("item_id", item.getId());
+            payload.put("user_id", userId);
+
+            Map<String, String> tags = new HashMap<>();
+            tags.put("category", item.getCategory());
+            tags.put("sub_category", item.getSubCategory());
+            tags.put("color", item.getColor());
+            tags.put("formality", item.getFormality());
+            tags.put("season", item.getSeason() != null ? item.getSeason().name().toLowerCase() : "unknown");
+
+            payload.put("tags", tags);
+
+            // Java ana akışı (Thread) tıkamasın diye asenkron (.subscribe) olarak arka planda fırlatıyoruz
+            webClient.post()
+                    .uri("/api/v1/ai/vectorize-item")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(payload)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .subscribe(
+                            success -> log.info("🧬 [VEKTÖR TETİKLENDİ] Kıyafet ID {} başarıyla Python DNA hafızasına gönderildi.", item.getId()),
+                            error -> log.error("🚨 [VEKTÖR HATASI] Kıyafet ID {} gönderilirken Python sunucusundan hata alındı: {}", item.getId(), error.getMessage())
+                    );
+        }
     }
     
 }
