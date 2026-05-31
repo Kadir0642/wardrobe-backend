@@ -48,6 +48,10 @@ public class ClothingItemService {
 
         // Manuel eklenen kıyafetide Vektör DNA'sına gönder!
         aiIntegrationService.vectorizeItemAsync(userId, savedItem);
+        // Uygulamadan fotoğrafı yükleyip arka planı silindikten sonra "Kaydet" dediğin an
+        // kıyafet veritabanına düşer düşmez bu asenkron kurye tetiklenir ve Python'a "Bunu vektörleştir" der.
+        // Kombin önerisi ekranına gelmesini beklemene kesinlikle gerek yoktur.
+        // (Daha önce eklediğin eski kıyafetlerin vektörünün olmama sebebi, sen o kıyafetleri eklediğinde henüz bu kodu yazmamış olmamızdır).
 
         return savedItem;
     }
